@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
+import { CacheModule } from '@nestjs/cache-manager';
+import { APP_GUARD } from '@nestjs/core';
 import * as path from 'path';
 import * as fs from 'fs';
+import { dataSourceOptions } from './data-source';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { TripsModule } from './trips/trips.module';
@@ -14,17 +19,19 @@ import { SharedModule } from './shared/shared.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot({
+      errorMessage: 'Too many requests, please try again later.',
+      throttlers: [{ ttl: 60000, limit: 10 }],
+    }),
+    CacheModule.register({ isGlobal: true, ttl: 3600000 }), // 1 hour in ms for cache-manager v5
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        const dbPath = config.get('DB_PATH', './data/traveloop.db');
-        const dir = path.dirname(path.resolve(dbPath));
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         return {
-          type: 'better-sqlite3',
-          database: dbPath,
+          ...dataSourceOptions,
           autoLoadEntities: true,
-          synchronize: true,
+          synchronize: process.env.NODE_ENV !== 'production',
           logging: false,
         } as any;
       },
@@ -36,6 +43,12 @@ import { SharedModule } from './shared/shared.module';
     ActivitiesModule,
     AdminModule,
     SharedModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

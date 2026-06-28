@@ -38,12 +38,12 @@ function StopItem({ stop, onDelete }: any) {
               </button>
             </div>
           </div>
-          {stop.activities?.length > 0 && (
+          {stop.stopActivities && stop.stopActivities.length > 0 && (
             <div className="flex gap-2 mt-2" style={{ flexWrap: 'wrap' }}>
-              {stop.activities.slice(0, 3).map((a: any) => (
-                <span key={a.id} className="badge badge-sky text-xs">{a.name}</span>
+              {stop.stopActivities.slice(0, 3).map((sa: any) => (
+                <span key={sa.id} className="badge badge-sky text-xs">{sa.activity.name}</span>
               ))}
-              {stop.activities.length > 3 && <span className="badge badge-sky text-xs">+{stop.activities.length - 3}</span>}
+              {stop.stopActivities.length > 3 && <span className="badge badge-sky text-xs">+{stop.stopActivities.length - 3}</span>}
             </div>
           )}
         </div>
@@ -71,13 +71,16 @@ export default function ItineraryBuilder() {
 
   // Load all trips for picker
   useEffect(() => {
-    tripsApi.list().then(r => {
-      setAllTrips(r.data);
-      if (!selectedTripId && r.data.length > 0) {
-        setSelectedTripId(r.data[0].id);
+    tripsApi.list({ page: 1, limit: 50 }).then(r => {
+      setAllTrips(r.data.data);
+      if (!selectedTripId && r.data.data.length > 0) {
+        setSelectedTripId(r.data.data[0].id);
+        if (r.data.data.length === 1) {
+          toast('Auto-selected your only trip', { icon: 'ℹ️' });
+        }
       }
     }).finally(() => setTripsLoading(false));
-    citiesApi.list().then(r => setCities(r.data));
+    citiesApi.list({ page: 1, limit: 100 }).then(r => setCities(r.data.data));
   }, []);
 
   // Load selected trip detail

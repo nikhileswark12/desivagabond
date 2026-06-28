@@ -15,9 +15,9 @@ export default function Notes() {
   const [editContent, setEditContent] = useState('');
 
   useEffect(() => {
-    tripsApi.list().then(r => {
-      setTrips(r.data);
-      if (r.data.length > 0) setSelectedTrip(r.data[0].id);
+    tripsApi.list({ page: 1, limit: 50 }).then(r => {
+      setTrips(r.data.data);
+      if (r.data.data.length > 0) setSelectedTrip(r.data.data[0].id);
     });
   }, []);
 

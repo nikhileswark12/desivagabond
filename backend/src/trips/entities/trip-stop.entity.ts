@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Trip } from './trip.entity';
+import { TripStopActivity } from './trip-stop-activity.entity';
 
 @Entity('trip_stops')
 export class TripStop {
@@ -27,8 +28,8 @@ export class TripStop {
   @Column({ default: 0 })
   orderIndex: number;
 
-  @Column('simple-json', { nullable: true })
-  activities?: { id: string; name: string; cost: number; duration: number; category: string }[];
+  @OneToMany(() => TripStopActivity, (tsa) => tsa.stop, { cascade: true })
+  stopActivities: TripStopActivity[];
 
   @ManyToOne(() => Trip, (trip) => trip.stops, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tripId' })
@@ -39,4 +40,7 @@ export class TripStop {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

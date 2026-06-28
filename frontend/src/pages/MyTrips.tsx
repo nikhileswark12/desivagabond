@@ -33,7 +33,7 @@ export default function MyTrips() {
   const navigate = useNavigate();
 
   const load = () => {
-    tripsApi.list().then(r => setTrips(r.data as TripListItem[])).finally(() => setLoading(false));
+    tripsApi.list({ page: 1, limit: 50 }).then(r => setTrips(r.data.data as TripListItem[])).finally(() => setLoading(false));
   };
 
   useEffect(() => { load(); }, []);

@@ -37,10 +37,15 @@ export default function Budget() {
   const [budgetLimit, setBudgetLimit] = useState('');
 
   useEffect(() => {
-    tripsApi.list().then(r => {
-      const list = r.data as TripLite[];
+    tripsApi.list({ page: 1, limit: 50 }).then(r => {
+      const list = r.data.data as TripLite[];
       setTrips(list);
-      if (list.length > 0) setSelectedTrip(list[0].id);
+      if (list.length > 0) {
+        setSelectedTrip(list[0].id);
+        if (list.length === 1) {
+          toast('Auto-selected your only trip', { icon: 'ℹ️' });
+        }
+      }
     });
   }, []);
 

@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Trip } from './trip.entity';
+import { TripStop } from './trip-stop.entity';
 
 @Entity('trip_notes')
 export class TripNote {
@@ -11,6 +12,10 @@ export class TripNote {
 
   @Column({ nullable: true })
   stopId?: string;
+
+  @ManyToOne(() => TripStop, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'stopId' })
+  stop: TripStop;
 
   @Column({ nullable: true })
   stopName?: string;

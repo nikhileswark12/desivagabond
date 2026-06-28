@@ -12,6 +12,7 @@ interface SharedTripStop {
   state?: string;
   arrivalDate: string;
   departureDate: string;
+  updatedAt: string;
 }
 
 interface SharedBudgetSnap {

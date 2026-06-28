@@ -1,9 +1,11 @@
 import {
-  Controller, Get, Post, Put, Delete, Param, Body, Request, UseGuards, Patch
+  Controller, Get, Post, Put, Delete, Param, Body, Request, UseGuards, Patch, Query
 } from '@nestjs/common';
 import { TripsService } from './trips.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+
+import { PaginationDto } from '../shared/dto/pagination.dto';
 
 @ApiTags('Trips')
 @ApiBearerAuth()
@@ -19,8 +21,8 @@ export class TripsController {
   }
 
   @Get()
-  list(@Request() req: any) {
-    return this.svc.getTrips(req.user.sub);
+  list(@Request() req: any, @Query() pagination: PaginationDto) {
+    return this.svc.getTrips(req.user.sub, pagination.page, pagination.limit);
   }
 
   @Get(':id')
@@ -62,6 +64,16 @@ export class TripsController {
   @Patch(':id/stops/reorder')
   reorderStops(@Param('id') tripId: string, @Request() req: any, @Body() body: { stopIds: string[] }) {
     return this.svc.reorderStops(tripId, req.user.sub, body.stopIds);
+  }
+
+  @Post(':id/stops/:stopId/activities')
+  addActivityToStop(@Param('id') tripId: string, @Param('stopId') stopId: string, @Request() req: any, @Body() body: { activityId: string }) {
+    return this.svc.addActivityToStop(tripId, stopId, body.activityId, req.user.sub);
+  }
+
+  @Delete(':id/stops/:stopId/activities/:activityId')
+  removeActivityFromStop(@Param('id') tripId: string, @Param('stopId') stopId: string, @Param('activityId') activityId: string, @Request() req: any) {
+    return this.svc.removeActivityFromStop(tripId, stopId, activityId, req.user.sub);
   }
 
   // ── Budget ─────────────────────────────────

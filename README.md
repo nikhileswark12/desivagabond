@@ -82,6 +82,20 @@ npm run start:dev
 
 The backend will run at: `http://localhost:3000`
 
+### 4. Database Migrations
+
+TypeORM is used for database interactions. While `synchronize` is enabled in development, **production deployments must run migrations manually** before starting the server.
+
+To generate a new migration after making entity changes:
+```bash
+npm run migration:generate src/migrations/MigrationName
+```
+
+To run pending migrations (required in production):
+```bash
+npm run migration:run
+```
+
 ---
 
 ## 🔐 Environment Variables
@@ -94,12 +108,42 @@ JWT_SECRET="your-secret-key"
 PORT=3000
 ```
 
+## 🏗️ Architecture
+
+```mermaid
+flowchart TD
+  Browser --> Nginx
+  Nginx --> NestJS
+  NestJS --> PostgreSQL[(PostgreSQL via Docker)]
+  NestJS --> Cache[(In-Memory Cache)]
+```
+
 ---
 
 ## 🗄️ Database
 
-DesiVagabond uses **SQLite** as the primary database, managing:
+DesiVagabond supports both **SQLite** (default fallback) and **PostgreSQL**.
 
+### Configuring the Database
+By default, the backend will use SQLite stored in `./data/traveloop.db`. To use PostgreSQL, configure the following environment variables in your `backend/.env` file:
+
+```env
+DB_TYPE=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=traveloop_user
+DB_PASSWORD=traveloop_password
+DB_NAME=traveloop
+```
+
+### Running with Docker Compose (PostgreSQL)
+A `docker-compose.yml` file is provided to quickly spin up the app connected to a PostgreSQL instance:
+
+```bash
+docker-compose up -d
+```
+
+The database manages:
 - Users
 - Trips
 - Itineraries

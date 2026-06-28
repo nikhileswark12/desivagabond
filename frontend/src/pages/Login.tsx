@@ -9,7 +9,7 @@ import { useParticleCanvas } from '../hooks/useThree';
 import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 
 export default function Login() {
-  const [tab, setTab] = useState<'login' | 'register'>('login');
+  const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,13 +23,19 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = tab === 'login'
-        ? await authApi.login(form.email, form.password)
-        : await authApi.register(form.name, form.email, form.password);
-      setToken(res.data.token);
-      setUser(res.data.user);
-      toast.success(`Welcome${tab === 'register' ? ' to DesiVagabond' : ' back'}, ${res.data.user.name}! 🌏`);
-      navigate('/');
+      if (tab === 'forgot') {
+        const res = await axios.post('/api/auth/forgot-password', { email: form.email });
+        toast.success(res.data.message || 'Check your email for a reset link! 📧');
+        setTab('login');
+      } else {
+        const res = tab === 'login'
+          ? await authApi.login(form.email, form.password)
+          : await authApi.register(form.name, form.email, form.password);
+        setToken(res.data.token);
+        setUser(res.data.user);
+        toast.success(`Welcome${tab === 'register' ? ' to DesiVagabond' : ' back'}, ${res.data.user.name}! 🌏`);
+        navigate('/');
+      }
     } catch (err: unknown) {
       const message = axios.isAxiosError(err) && typeof err.response?.data === 'object' && err.response.data && 'message' in err.response.data
         ? String((err.response.data as { message: unknown }).message)
@@ -96,26 +102,35 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Password</label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input className="input" style={{ paddingLeft: 38, paddingRight: 40 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
-              <button type="button" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowPw(!showPw)}>
-                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
+          {tab !== 'forgot' && (
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input className="input" style={{ paddingLeft: 38, paddingRight: 40 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
+                <button type="button" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowPw(!showPw)}>
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              {tab === 'login' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <button type="button" style={{ background: 'none', border: 'none', color: 'var(--sky-500)', fontSize: 13, cursor: 'pointer' }} onClick={() => setTab('forgot')}>
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
           <button type="submit" className="btn btn-primary w-full" style={{ justifyContent: 'center', marginTop: 8 }} disabled={loading}>
-            {loading ? '⏳ Please wait...' : tab === 'login' ? '🚀 Sign In' : '✨ Create Account'}
+            {loading ? '⏳ Please wait...' : tab === 'login' ? '🚀 Sign In' : tab === 'register' ? '✨ Create Account' : '📧 Send Reset Link'}
           </button>
         </form>
 
         <p className="text-sm text-muted" style={{ textAlign: 'center', marginTop: 20 }}>
-          {tab === 'login' ? "Don't have an account? " : "Already have an account? "}
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sky-500)', fontWeight: 600 }} onClick={() => setTab(tab === 'login' ? 'register' : 'login')}>
-            {tab === 'login' ? 'Sign up free' : 'Sign in'}
+          {tab === 'login' ? "Don't have an account? " : tab === 'forgot' ? "Remembered your password? " : "Already have an account? "}
+          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sky-500)', fontWeight: 600 }} onClick={() => setTab(tab === 'login' || tab === 'forgot' ? 'register' : 'login')}>
+            {tab === 'login' || tab === 'forgot' ? 'Sign up free' : 'Sign in'}
           </button>
         </p>
       </motion.div>

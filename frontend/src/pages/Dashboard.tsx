@@ -8,6 +8,7 @@ import { useGlobeCanvas } from '../hooks/useThree';
 import { Plus, MapPin, Calendar, Star } from 'lucide-react';
 import { cityBannerGradient } from '../constants/cityBannerGradients';
 import { getCityImage } from '../utils/cityImages';
+import { CityImage } from '../components/CityImage';
 
 const DEST_TYPES = [
   { id: '', label: 'All Destinations', emoji: '🌏' },
@@ -52,9 +53,9 @@ export default function Dashboard() {
 
 
   useEffect(() => {
-    Promise.all([tripsApi.list(), citiesApi.list()]).then(([t, c]) => {
-      setTrips((t.data as DashboardTrip[]).slice(0, 3));
-      setCities(c.data as DashboardCity[]);
+    Promise.all([tripsApi.list({ page: 1, limit: 5 }), citiesApi.list({ page: 1, limit: 10 })]).then(([t, c]) => {
+      setTrips(t.data.data);
+      setCities(c.data.data);
     });
   }, []);
 
@@ -135,11 +136,13 @@ export default function Dashboard() {
           {filteredCities.map((city, i) => (
             <motion.div key={city.id} className="trip-card" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
               onClick={() => navigate(`/cities?highlight=${city.id}`)}>
-              <div className="trip-card-banner" style={{ 
-                backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65)), url(${getCityImage(city.image || city.id)})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-              }}>
+              <div className="trip-card-banner" style={{ position: 'relative', overflow: 'hidden' }}>
+                <CityImage 
+                  src={getCityImage(city.image || city.id)} 
+                  alt={city.name}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+                />
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))' }} />
                 <div style={{ position: 'absolute', top: 12, right: 12 }}>
                   <span className="badge badge-sky">{city.type.replace('-', ' ')}</span>
                 </div>

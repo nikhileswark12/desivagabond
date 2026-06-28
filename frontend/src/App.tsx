@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { useStore } from './store';
 
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import MyTrips from './pages/MyTrips';
 import CreateTrip from './pages/CreateTrip';
@@ -19,8 +20,8 @@ import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 
 function Protected({ children }: { children: React.ReactNode }) {
-  const { token } = useStore();
-  if (!token) return <Navigate to="/login" replace />;
+  const { user } = useStore();
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
 
@@ -47,6 +48,7 @@ export default function App() {
       />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/shared/:token" element={<SharedView />} />
 
         <Route path="/" element={<Protected><Dashboard /></Protected>} />

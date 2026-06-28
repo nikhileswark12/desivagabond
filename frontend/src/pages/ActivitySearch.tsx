@@ -33,8 +33,8 @@ export default function ActivitySearch() {
   }, []);
 
   useEffect(() => {
-    activitiesApi.list({ q: q || undefined, city: city || undefined, category: category || undefined, maxCost: maxCost || undefined })
-      .then(r => setActivities(r.data as ActivityHit[]));
+    activitiesApi.list({ q: q || undefined, city: city || undefined, category: category || undefined, maxCost: maxCost || undefined, page: 1, limit: 50 })
+      .then(r => setActivities(r.data.data as ActivityHit[]));
   }, [q, city, category, maxCost]);
 
   const catColors: Record<string, string> = {

@@ -1,14 +1,17 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThan, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { User } from '../users/user.entity';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private usersRepo: Repository<User>,
+    @InjectRepository(PasswordResetToken) private resetTokenRepo: Repository<PasswordResetToken>,
     private jwtService: JwtService,
   ) {}
 
@@ -33,5 +36,50 @@ export class AuthService {
 
   async getProfile(userId: string) {
     return this.usersRepo.findOne({ where: { id: userId }, select: ['id', 'name', 'email', 'avatar', 'role', 'language', 'savedDestinations', 'createdAt'] });
+  }
+
+  async forgotPassword(email: string) {
+    const user = await this.usersRepo.findOne({ where: { email } });
+    if (!user) return { message: 'If an account exists, a reset link was sent' };
+
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    const resetToken = this.resetTokenRepo.create({
+      userId: user.id,
+      tokenHash,
+      expiresAt,
+    });
+    await this.resetTokenRepo.save(resetToken);
+
+    // In a real app, send email here. We'll just log it.
+    console.log(`[Email Stub] Password reset link for ${email}: /reset-password?token=${token}`);
+    return { message: 'If an account exists, a reset link was sent' };
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    
+    const resetToken = await this.resetTokenRepo.findOne({
+      where: { tokenHash, usedAt: IsNull(), expiresAt: MoreThan(new Date()) },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const user = await this.usersRepo.findOne({ where: { id: resetToken.userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    user.password = await bcrypt.hash(newPassword, 12);
+    await this.usersRepo.save(user);
+
+    resetToken.usedAt = new Date();
+    await this.resetTokenRepo.save(resetToken);
+
+    return { message: 'Password reset successfully' };
   }
 }

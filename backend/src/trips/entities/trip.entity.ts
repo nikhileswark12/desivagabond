@@ -31,6 +31,9 @@ export class Trip {
   @Column({ nullable: true, unique: true })
   shareToken?: string;
 
+  @Column({ type: 'datetime', nullable: true })
+  shareExpiresAt?: Date;
+
   @Column({ default: 'draft' })
   status: string;
 

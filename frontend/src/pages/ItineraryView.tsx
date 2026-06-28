@@ -13,6 +13,11 @@ interface StopActivityRow {
   cost?: number;
 }
 
+interface TripStopActivityRow {
+  id: string;
+  activity: StopActivityRow;
+}
+
 interface TripStopRow {
   id: string;
   orderIndex: number;
@@ -21,7 +26,8 @@ interface TripStopRow {
   region?: string;
   arrivalDate: string;
   departureDate: string;
-  activities?: StopActivityRow[];
+  stopActivities?: TripStopActivityRow[];
+  updatedAt: string;
 }
 
 interface TripDetailView {
@@ -141,19 +147,22 @@ export default function ItineraryView() {
                   <div className="flex items-center gap-1 text-sm text-muted mb-3">
                     <Calendar size={13} /> {stop.arrivalDate} → {stop.departureDate}
                   </div>
-                  {stop.activities?.length > 0 && (
+                  {stop.stopActivities && stop.stopActivities.length > 0 && (
                     <div>
                       <div className="text-sm font-bold mb-2" style={{ color: 'var(--text-secondary)' }}>Activities</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {(stop.activities ?? []).map(act => (
-                          <div key={act.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--sky-50)', borderRadius: 8 }}>
+                        {(stop.stopActivities ?? []).map(sa => {
+                          const act = sa.activity;
+                          return (
+                          <div key={sa.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--sky-50)', borderRadius: 8 }}>
                             <span style={{ fontSize: 14, fontWeight: 500 }}>{act.name}</span>
                             <div className="flex gap-2 text-xs text-muted">
                               <span><Clock size={11} style={{ display: 'inline' }} /> {act.duration}h</span>
-                              {act.cost > 0 && <span>₹{act.cost.toLocaleString()}</span>}
+                              {act.cost !== undefined && act.cost > 0 && <span>₹{act.cost.toLocaleString()}</span>}
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -173,7 +182,7 @@ export default function ItineraryView() {
                 <div style={{ fontWeight: 700 }}>{stop.cityName}</div>
                 <div className="text-sm text-muted">{stop.arrivalDate} → {stop.departureDate}</div>
               </div>
-              <span className="badge badge-sky">{stop.activities?.length || 0} activities</span>
+              <span className="badge badge-sky">{stop.stopActivities?.length || 0} activities</span>
             </motion.div>
           ))}
         </div>

@@ -24,7 +24,19 @@ export class User {
   @Column({ nullable: true })
   language?: string;
 
-  @Column('simple-array', { nullable: true })
+  @Column({ nullable: true })
+  pending_email?: string;
+
+  @Column({ nullable: true })
+  email_verify_token?: string;
+
+  @Column({ nullable: true })
+  email_verify_expires?: Date;
+
+  @Column(
+    process.env.DB_TYPE === 'postgres' ? 'text' : 'simple-array',
+    { nullable: true, array: process.env.DB_TYPE === 'postgres' ? true : undefined }
+  )
   savedDestinations?: string[];
 
   @CreateDateColumn()

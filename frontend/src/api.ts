@@ -1,13 +1,22 @@
 import axios from 'axios';
 import { useStore } from './store';
 
+function getCookie(name: string) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+}
+
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {
-  const token = useStore.getState().token;
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const token = getCookie('XSRF-TOKEN');
+  if (token) {
+    config.headers['X-CSRF-Token'] = token;
+  }
   return config;
 });
 
@@ -29,12 +38,13 @@ export const authApi = {
     api.post('/auth/register', { name, email, password }),
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
+  logout: () => api.post('/auth/logout'),
   me: () => api.get('/auth/me'),
 };
 
 // Trips
 export const tripsApi = {
-  list: () => api.get('/trips'),
+  list: (params?: any) => api.get('/trips', { params }),
   get: (id: string) => api.get(`/trips/${id}`),
   create: (data: any) => api.post('/trips', data),
   update: (id: string, data: any) => api.put(`/trips/${id}`, data),
@@ -72,6 +82,7 @@ export const activitiesApi = {
 // Admin
 export const adminApi = {
   stats: () => api.get('/admin/stats'),
+  auditLogs: (params?: any) => api.get('/admin/audit-logs', { params }),
 };
 
 // Shared

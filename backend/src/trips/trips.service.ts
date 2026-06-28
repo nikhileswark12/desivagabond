@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomBytes } from 'crypto';
@@ -7,6 +8,8 @@ import { TripStop } from './entities/trip-stop.entity';
 import { BudgetItem } from './entities/budget-item.entity';
 import { PackingItem } from './entities/packing-item.entity';
 import { TripNote } from './entities/trip-note.entity';
+import { TripStopActivity } from './entities/trip-stop-activity.entity';
+import { AuditLog } from '../admin/entities/audit-log.entity';
 
 @Injectable()
 export class TripsService {
@@ -16,6 +19,8 @@ export class TripsService {
     @InjectRepository(BudgetItem) private budgetRepo: Repository<BudgetItem>,
     @InjectRepository(PackingItem) private packingRepo: Repository<PackingItem>,
     @InjectRepository(TripNote) private notesRepo: Repository<TripNote>,
+    @InjectRepository(TripStopActivity) private stopActivitiesRepo: Repository<TripStopActivity>,
+    @InjectRepository(AuditLog) private auditRepo: Repository<AuditLog>,
   ) {}
 
   // ── Trips ──────────────────────────────────────────────────
@@ -24,18 +29,22 @@ export class TripsService {
     return this.tripsRepo.save(trip);
   }
 
-  async getTrips(userId: string) {
-    return this.tripsRepo.find({
+  async getTrips(userId: string, page = 1, limit = 10) {
+    const skip = (page - 1) * limit;
+    const [data, total] = await this.tripsRepo.findAndCount({
       where: { userId },
       relations: ['stops'],
       order: { createdAt: 'DESC' },
+      skip,
+      take: limit,
     });
+    return { data, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async getTrip(id: string, userId: string) {
     const trip = await this.tripsRepo.findOne({
       where: { id },
-      relations: ['stops', 'budgetItems', 'packingItems', 'notes'],
+      relations: ['stops', 'stops.stopActivities', 'stops.stopActivities.activity', 'budgetItems', 'packingItems', 'notes'],
     });
     if (!trip) throw new NotFoundException('Trip not found');
     if (trip.userId !== userId) throw new ForbiddenException();
@@ -51,14 +60,23 @@ export class TripsService {
   async deleteTrip(id: string, userId: string) {
     const trip = await this.getTrip(id, userId);
     await this.tripsRepo.remove(trip);
+    await this.auditRepo.save(this.auditRepo.create({ userId, action: 'DELETE_TRIP', entityType: 'trip', entityId: id }));
     return { message: 'Trip deleted' };
   }
 
   async shareTrip(id: string, userId: string, isPublic: boolean) {
     const trip = await this.getTrip(id, userId);
     trip.isPublic = isPublic;
-    if (isPublic && !trip.shareToken) {
-      trip.shareToken = randomBytes(12).toString('hex');
+    if (isPublic) {
+      if (!trip.shareToken) {
+        trip.shareToken = randomBytes(12).toString('hex');
+      }
+      const expiryDays = parseInt(process.env.SHARE_EXPIRY_DAYS || '30', 10);
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + expiryDays);
+      trip.shareExpiresAt = expiresAt;
+    } else {
+      trip.shareExpiresAt = null as any;
     }
     return this.tripsRepo.save(trip);
   }
@@ -91,6 +109,7 @@ export class TripsService {
   async deleteStop(tripId: string, stopId: string, userId: string) {
     await this.getTrip(tripId, userId);
     await this.stopsRepo.delete({ id: stopId, tripId });
+    await this.auditRepo.save(this.auditRepo.create({ userId, action: 'DELETE_STOP', entityType: 'stop', entityId: stopId }));
     return { message: 'Stop deleted' };
   }
 
@@ -102,6 +121,21 @@ export class TripsService {
     return { message: 'Stops reordered' };
   }
 
+  async addActivityToStop(tripId: string, stopId: string, activityId: string, userId: string) {
+    await this.getTrip(tripId, userId);
+    const stop = await this.stopsRepo.findOne({ where: { id: stopId, tripId } });
+    if (!stop) throw new NotFoundException('Stop not found');
+    
+    const stopActivity = this.stopActivitiesRepo.create({ stopId, activityId });
+    return this.stopActivitiesRepo.save(stopActivity);
+  }
+
+  async removeActivityFromStop(tripId: string, stopId: string, activityId: string, userId: string) {
+    await this.getTrip(tripId, userId);
+    await this.stopActivitiesRepo.delete({ stopId, activityId });
+    return { message: 'Activity removed from stop' };
+  }
+
   // ── Budget ─────────────────────────────────────────────────
   async getBudget(tripId: string, userId: string) {
     await this.getTrip(tripId, userId);
@@ -109,7 +143,10 @@ export class TripsService {
   }
 
   async addBudgetItem(tripId: string, userId: string, data: Partial<BudgetItem>) {
-    await this.getTrip(tripId, userId);
+    const trip = await this.getTrip(tripId, userId);
+    if (data.stopId && !trip.stops.some(s => s.id === data.stopId)) {
+      throw new ForbiddenException('Stop does not belong to this trip');
+    }
     const item = this.budgetRepo.create({ ...data, tripId });
     return this.budgetRepo.save(item);
   }
@@ -117,6 +154,7 @@ export class TripsService {
   async deleteBudgetItem(tripId: string, itemId: string, userId: string) {
     await this.getTrip(tripId, userId);
     await this.budgetRepo.delete({ id: itemId, tripId });
+    await this.auditRepo.save(this.auditRepo.create({ userId, action: 'DELETE_BUDGET_ITEM', entityType: 'budget_item', entityId: itemId }));
     return { message: 'Budget item deleted' };
   }
 
@@ -141,6 +179,7 @@ export class TripsService {
   async deletePackingItem(tripId: string, itemId: string, userId: string) {
     await this.getTrip(tripId, userId);
     await this.packingRepo.delete({ id: itemId, tripId });
+    await this.auditRepo.save(this.auditRepo.create({ userId, action: 'DELETE_PACKING_ITEM', entityType: 'packing_item', entityId: itemId }));
     return { message: 'Packing item deleted' };
   }
 
@@ -151,13 +190,19 @@ export class TripsService {
   }
 
   async addNote(tripId: string, userId: string, data: Partial<TripNote>) {
-    await this.getTrip(tripId, userId);
+    const trip = await this.getTrip(tripId, userId);
+    if (data.stopId && !trip.stops.some(s => s.id === data.stopId)) {
+      throw new ForbiddenException('Stop does not belong to this trip');
+    }
     const note = this.notesRepo.create({ ...data, tripId });
     return this.notesRepo.save(note);
   }
 
   async updateNote(tripId: string, noteId: string, userId: string, data: Partial<TripNote>) {
-    await this.getTrip(tripId, userId);
+    const trip = await this.getTrip(tripId, userId);
+    if (data.stopId && !trip.stops.some(s => s.id === data.stopId)) {
+      throw new ForbiddenException('Stop does not belong to this trip');
+    }
     await this.notesRepo.update({ id: noteId, tripId }, data);
     return this.notesRepo.findOne({ where: { id: noteId } });
   }
@@ -165,6 +210,7 @@ export class TripsService {
   async deleteNote(tripId: string, noteId: string, userId: string) {
     await this.getTrip(tripId, userId);
     await this.notesRepo.delete({ id: noteId, tripId });
+    await this.auditRepo.save(this.auditRepo.create({ userId, action: 'DELETE_NOTE', entityType: 'note', entityId: noteId }));
     return { message: 'Note deleted' };
   }
 
@@ -181,5 +227,24 @@ export class TripsService {
       .limit(10)
       .getRawMany();
     return { totalTrips: total, sharedTrips: shared, topCities };
+  }
+
+  // ── Cron Jobs ──────────────────────────────────────────────
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleExpiredShares() {
+    const expiredTrips = await this.tripsRepo
+      .createQueryBuilder('trip')
+      .where('trip.isPublic = :isPublic', { isPublic: true })
+      .andWhere('trip.shareExpiresAt < :now', { now: new Date() })
+      .getMany();
+
+    for (const trip of expiredTrips) {
+      trip.isPublic = false;
+      trip.shareExpiresAt = null as any;
+    }
+
+    if (expiredTrips.length > 0) {
+      await this.tripsRepo.save(expiredTrips);
+    }
   }
 }

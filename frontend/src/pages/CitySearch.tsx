@@ -5,6 +5,7 @@ import { citiesApi } from '../api';
 import { Search, Star } from 'lucide-react';
 import { cityBannerGradient } from '../constants/cityBannerGradients';
 import { getCityImage } from '../utils/cityImages';
+import { CityImage } from '../components/CityImage';
 
 interface CityHit {
   id: string;
@@ -31,14 +32,17 @@ export default function CitySearch() {
   const [region, setRegion] = useState('');
   const [types, setTypes] = useState<CityTypeOption[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     citiesApi.types().then(r => setTypes(r.data as CityTypeOption[]));
     citiesApi.regions().then(r => setRegions(r.data as string[]));
   }, []);
 
   useEffect(() => {
-    citiesApi.list({ q: q || undefined, type: type || undefined, region: region || undefined })
-      .then(r => setCities(r.data as CityHit[]));
+    setLoading(true);
+    citiesApi.list({ q: q || undefined, type: type || undefined, region: region || undefined, page: 1, limit: 50 })
+      .then(r => setCities(r.data.data))
+      .finally(() => setLoading(false));
   }, [q, type, region]);
 
   const emojiMap: Record<string, string> = {
@@ -100,11 +104,13 @@ export default function CitySearch() {
         {cities.map((city, i) => (
           <motion.div key={city.id} className="trip-card"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i, 8) * 0.05 }}>
-            <div className="trip-card-banner" style={{ 
-              backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65)), url(${getCityImage(city.image || city.id)})`,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}>
+            <div className="trip-card-banner" style={{ position: 'relative', overflow: 'hidden' }}>
+              <CityImage 
+                src={getCityImage(city.image || city.id)} 
+                alt={city.name}
+                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.65))' }} />
               <div style={{ position: 'absolute', top: 12, right: 12 }}>
                 <span className="badge" style={{ background: 'rgba(255,255,255,0.2)', color: 'white', backdropFilter: 'blur(8px)' }}>
                   {city.type.replace('-', ' ')}
