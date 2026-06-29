@@ -1,12 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { useStore } from '../store';
-import { tripsApi, citiesApi } from '../api';
-import { useGlobeCanvas } from '../hooks/useThree';
+import { useTrips } from '../hooks/useTrips';
+import { useCities } from '../hooks/useCities';
 import { Plus, MapPin, Calendar, Star } from 'lucide-react';
-import { cityBannerGradient } from '../constants/cityBannerGradients';
 import { getCityImage } from '../utils/cityImages';
 import { CityImage } from '../components/CityImage';
 
@@ -23,41 +22,15 @@ const DEST_TYPES = [
 
 const REGIONS = ['All Regions', 'North India', 'South India', 'East India', 'West India', 'Northeast India', 'Islands'];
 
-interface DashboardTrip {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  stops?: unknown[];
-}
-
-interface DashboardCity {
-  id: string;
-  name: string;
-  state: string;
-  type: string;
-  region: string;
-  description: string;
-  popularity: number;
-  costIndex: string;
-  image?: string;
-}
 
 export default function Dashboard() {
   const { user } = useStore();
   const navigate = useNavigate();
-  const [trips, setTrips] = useState<DashboardTrip[]>([]);
-  const [cities, setCities] = useState<DashboardCity[]>([]);
   const [activeType, setActiveType] = useState('');
   const [activeRegion, setActiveRegion] = useState('All Regions');
 
-
-  useEffect(() => {
-    Promise.all([tripsApi.list({ page: 1, limit: 5 }), citiesApi.list({ page: 1, limit: 10 })]).then(([t, c]) => {
-      setTrips(t.data.data);
-      setCities(c.data.data);
-    });
-  }, []);
+  const { trips } = useTrips({ page: 1, limit: 5 });
+  const { cities } = useCities({ page: 1, limit: 10 });
 
   const filteredCities = cities
     .filter(c => !activeType || c.type === activeType)
@@ -193,10 +166,3 @@ export default function Dashboard() {
   );
 }
 
-function typeEmoji(type: string) {
-  const map: Record<string, string> = {
-    'hill-station': '⛰️', beach: '🏖️', heritage: '🏛️',
-    tropical: '🌴', desert: '🏜️', wildlife: '🐯', metro: '🏙️',
-  };
-  return map[type] || '📍';
-}

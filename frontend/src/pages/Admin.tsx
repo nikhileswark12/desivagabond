@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { adminApi } from '../api';
@@ -18,6 +18,7 @@ interface AdminUserRow {
   name: string;
   email: string;
   role: string;
+  createdAt: string;
 }
 
 interface AdminStats {

@@ -5,7 +5,6 @@ import Layout from '../components/Layout';
 import { tripsApi } from '../api';
 import toast from 'react-hot-toast';
 import { Plus, Calendar, MapPin, Trash2, Edit2, Eye } from 'lucide-react';
-import { TRIP_CARD_ROTATION_GRADIENTS } from '../constants/cityBannerGradients';
 
 interface TripListItem {
   id: string;

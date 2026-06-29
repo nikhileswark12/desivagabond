@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
-import { tripsApi } from '../api';
+import { useTrips } from '../hooks/useTrips';
+import { useBudget, useAddBudgetItem, useDeleteBudgetItem } from '../hooks/useBudget';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import toast from 'react-hot-toast';
@@ -17,42 +18,25 @@ const CATEGORIES = [
   { id: 'other', label: 'Other', emoji: '📦', color: '#a8917c' },
 ];
 
-interface TripLite {
-  id: string;
-  name: string;
-}
-
-interface BudgetItemRow {
-  id: string;
-  category: string;
-  label: string;
-  amount: string | number;
-}
 
 export default function Budget() {
-  const [trips, setTrips] = useState<TripLite[]>([]);
   const [selectedTrip, setSelectedTrip] = useState('');
-  const [items, setItems] = useState<BudgetItemRow[]>([]);
   const [form, setForm] = useState({ category: 'transport', label: '', amount: '' });
   const [budgetLimit, setBudgetLimit] = useState('');
 
-  useEffect(() => {
-    tripsApi.list({ page: 1, limit: 50 }).then(r => {
-      const list = r.data.data as TripLite[];
-      setTrips(list);
-      if (list.length > 0) {
-        setSelectedTrip(list[0].id);
-        if (list.length === 1) {
-          toast('Auto-selected your only trip', { icon: 'ℹ️' });
-        }
-      }
-    });
-  }, []);
+  const { trips } = useTrips({ page: 1, limit: 50 });
+  const { items, refetch: refetchBudget } = useBudget(selectedTrip);
+  const { addItem } = useAddBudgetItem();
+  const { deleteItem } = useDeleteBudgetItem();
 
   useEffect(() => {
-    if (!selectedTrip) return;
-    tripsApi.getBudget(selectedTrip).then(r => setItems(r.data as BudgetItemRow[]));
-  }, [selectedTrip]);
+    if (!selectedTrip && trips && trips.length > 0) {
+      setSelectedTrip(trips[0].id);
+      if (trips.length === 1) {
+        toast('Auto-selected your only trip', { icon: 'ℹ️' });
+      }
+    }
+  }, [trips, selectedTrip]);
 
   const total = items.reduce((s, i) => s + Number(i.amount), 0);
   const limit = Number(budgetLimit) || 0;
@@ -82,20 +66,22 @@ export default function Budget() {
     }],
   };
 
-  const addItem = async () => {
+  const handleAddItem = async () => {
     if (!form.label || !form.amount || !selectedTrip) { toast.error('Fill all fields'); return; }
     try {
-      const res = await tripsApi.addBudgetItem(selectedTrip, { ...form, amount: Number(form.amount) });
-      setItems(prev => [...prev, res.data]);
+      await addItem(selectedTrip, { ...form, amount: Number(form.amount) });
       setForm({ category: 'transport', label: '', amount: '' });
       toast.success('Budget item added ✅');
+      refetchBudget();
     } catch { toast.error('Failed to add item'); }
   };
 
-  const deleteItem = async (itemId: string) => {
-    await tripsApi.deleteBudgetItem(selectedTrip, itemId);
-    setItems(prev => prev.filter(i => i.id !== itemId));
-    toast.success('Removed');
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      await deleteItem(selectedTrip, itemId);
+      toast.success('Removed');
+      refetchBudget();
+    } catch {}
   };
 
   return (
@@ -173,7 +159,7 @@ export default function Budget() {
             <div className="form-label">Amount (₹)</div>
             <input className="input" type="number" placeholder="0" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} />
           </div>
-          <button className="btn btn-primary" onClick={addItem}><Plus size={16} /></button>
+          <button className="btn btn-primary" onClick={handleAddItem}><Plus size={16} /></button>
         </div>
       </div>
 
@@ -192,7 +178,7 @@ export default function Budget() {
                   <div className="text-xs text-muted">{cat?.label}</div>
                 </div>
                 <div style={{ fontWeight: 700, color: 'var(--accent)' }}>₹{Number(item.amount).toLocaleString()}</div>
-                <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger)' }} onClick={() => deleteItem(item.id)}>
+                <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteItem(item.id)}>
                   <Trash2 size={15} />
                 </button>
               </motion.div>

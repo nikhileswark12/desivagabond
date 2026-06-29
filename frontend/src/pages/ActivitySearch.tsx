@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { activitiesApi } from '../api';
+import { useActivities } from '../hooks/useActivities';
 import { Search, Clock } from 'lucide-react';
 
 interface ActivityCategory {
@@ -10,32 +11,19 @@ interface ActivityCategory {
   emoji?: string;
 }
 
-interface ActivityHit {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  city?: string;
-  duration?: number;
-  cost?: number;
-}
 
 export default function ActivitySearch() {
-  const [activities, setActivities] = useState<ActivityHit[]>([]);
   const [categories, setCategories] = useState<ActivityCategory[]>([]);
   const [q, setQ] = useState('');
   const [city, setCity] = useState('');
   const [category, setCategory] = useState('');
   const [maxCost, setMaxCost] = useState('');
 
+  const { activities } = useActivities({ q: q || undefined, city: city || undefined, category: category || undefined, maxCost: maxCost || undefined, page: 1, limit: 50 });
+
   useEffect(() => {
     activitiesApi.categories().then(r => setCategories(r.data as ActivityCategory[]));
   }, []);
-
-  useEffect(() => {
-    activitiesApi.list({ q: q || undefined, city: city || undefined, category: category || undefined, maxCost: maxCost || undefined, page: 1, limit: 50 })
-      .then(r => setActivities(r.data.data as ActivityHit[]));
-  }, [q, city, category, maxCost]);
 
   const catColors: Record<string, string> = {
     adventure: '#a3453a',

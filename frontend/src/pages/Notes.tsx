@@ -1,50 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout';
-import { tripsApi } from '../api';
+import { useTrips } from '../hooks/useTrips';
+import { useNotes, useAddNote, useUpdateNote, useDeleteNote } from '../hooks/useNotes';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, Edit2, Save, X, StickyNote, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Trash2, Edit2, Save, X, Clock } from 'lucide-react';
 
 export default function Notes() {
-  const [trips, setTrips] = useState<any[]>([]);
   const [selectedTrip, setSelectedTrip] = useState('');
-  const [notes, setNotes] = useState<any[]>([]);
   const [newNote, setNewNote] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  useEffect(() => {
-    tripsApi.list({ page: 1, limit: 50 }).then(r => {
-      setTrips(r.data.data);
-      if (r.data.data.length > 0) setSelectedTrip(r.data.data[0].id);
-    });
-  }, []);
+  const { trips } = useTrips({ page: 1, limit: 50 });
+  const { notes, refetch: refetchNotes } = useNotes(selectedTrip);
+  const { addNote: createNote } = useAddNote();
+  const { updateNote } = useUpdateNote();
+  const { deleteNote: removeNote } = useDeleteNote();
 
   useEffect(() => {
-    if (!selectedTrip) return;
-    tripsApi.getNotes(selectedTrip).then(r => setNotes(r.data));
-  }, [selectedTrip]);
+    if (!selectedTrip && trips && trips.length > 0) {
+      setSelectedTrip(trips[0].id);
+    }
+  }, [trips, selectedTrip]);
 
   const addNote = async () => {
     if (!newNote.trim()) return;
-    const res = await tripsApi.addNote(selectedTrip, { content: newNote });
-    setNotes(prev => [res.data, ...prev]);
-    setNewNote('');
-    toast.success('Note saved 📝');
+    try {
+      await createNote(selectedTrip, { content: newNote });
+      setNewNote('');
+      toast.success('Note saved 📝');
+      refetchNotes();
+    } catch {}
   };
 
   const saveEdit = async (id: string) => {
-    const res = await tripsApi.updateNote(selectedTrip, id, { content: editContent });
-    setNotes(prev => prev.map(n => n.id === id ? res.data : n));
-    setEditing(null);
-    toast.success('Note updated');
+    try {
+      await updateNote(selectedTrip, id, { content: editContent });
+      setEditing(null);
+      toast.success('Note updated');
+      refetchNotes();
+    } catch {}
   };
 
   const deleteNote = async (id: string) => {
-    await tripsApi.deleteNote(selectedTrip, id);
-    setNotes(prev => prev.filter(n => n.id !== id));
-    toast.success('Note deleted');
+    try {
+      await removeNote(selectedTrip, id);
+      toast.success('Note deleted');
+      refetchNotes();
+    } catch {}
   };
 
   return (

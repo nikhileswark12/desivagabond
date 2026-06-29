@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { sharedApi } from '../api';
@@ -110,7 +110,7 @@ export default function SharedItinerary() {
       </div>
 
       {/* Budget summary */}
-      {trip.budgetItems?.length > 0 && (
+      {trip.budgetItems && trip.budgetItems.length > 0 && (
         <div className="card card-p mt-6">
           <h3 style={{ fontWeight: 700, marginBottom: 12 }}>💰 Budget Overview</h3>
           <div style={{ fontSize: 28, fontWeight: 700, fontFamily: 'var(--font-display)', color: 'var(--accent)', marginBottom: 8 }}>

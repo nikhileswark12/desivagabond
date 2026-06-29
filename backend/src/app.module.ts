@@ -15,6 +15,7 @@ import { CitiesModule } from './cities/cities.module';
 import { ActivitiesModule } from './activities/activities.module';
 import { AdminModule } from './admin/admin.module';
 import { SharedModule } from './shared/shared.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SharedModule } from './shared/shared.module';
     ActivitiesModule,
     AdminModule,
     SharedModule,
+    MailModule,
   ],
   providers: [
     {

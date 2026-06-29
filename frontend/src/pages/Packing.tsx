@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
-import { tripsApi } from '../api';
+import { useTrips } from '../hooks/useTrips';
+import { usePacking, useAddPackingItem, useUpdatePackingItem, useDeletePackingItem } from '../hooks/usePacking';
 import toast from 'react-hot-toast';
 import { Plus, Trash2, RefreshCw, CheckSquare } from 'lucide-react';
 
@@ -22,59 +23,67 @@ const SUGGESTIONS: Record<string, string[]> = {
 };
 
 export default function Packing() {
-  const [trips, setTrips] = useState<any[]>([]);
   const [selectedTrip, setSelectedTrip] = useState('');
-  const [items, setItems] = useState<any[]>([]);
   const [activeCat, setActiveCat] = useState('all');
   const [newItem, setNewItem] = useState('');
   const [newCat, setNewCat] = useState('general');
 
-  useEffect(() => {
-    tripsApi.list({ page: 1, limit: 50 }).then(r => {
-      setTrips(r.data.data);
-      if (r.data.data.length > 0) setSelectedTrip(r.data.data[0].id);
-    });
-  }, []);
+  const { trips } = useTrips({ page: 1, limit: 50 });
+  const { items, refetch: refetchPacking } = usePacking(selectedTrip);
+  const { addItem } = useAddPackingItem();
+  const { updateItem } = useUpdatePackingItem();
+  const { deleteItem } = useDeletePackingItem();
 
   useEffect(() => {
-    if (!selectedTrip) return;
-    tripsApi.getPacking(selectedTrip).then(r => setItems(r.data));
-  }, [selectedTrip]);
+    if (!selectedTrip && trips && trips.length > 0) {
+      setSelectedTrip(trips[0].id);
+    }
+  }, [trips, selectedTrip]);
 
   const filtered = activeCat === 'all' ? items : items.filter(i => i.category === activeCat);
   const packed = items.filter(i => i.isPacked).length;
   const pct = items.length > 0 ? Math.round((packed / items.length) * 100) : 0;
 
-  const addItem = async () => {
+  const handleAddItem = async () => {
     if (!newItem.trim()) return;
-    const res = await tripsApi.addPackingItem(selectedTrip, { name: newItem, category: newCat });
-    setItems(prev => [...prev, res.data]);
-    setNewItem('');
-    toast.success('Added to checklist');
+    try {
+      await addItem(selectedTrip, { name: newItem, category: newCat });
+      setNewItem('');
+      toast.success('Added to checklist');
+      refetchPacking();
+    } catch {}
   };
 
   const toggleItem = async (item: any) => {
-    const res = await tripsApi.updatePackingItem(selectedTrip, item.id, { isPacked: !item.isPacked });
-    setItems(prev => prev.map(i => i.id === item.id ? res.data : i));
+    try {
+      await updateItem(selectedTrip, item.id, { isPacked: !item.isPacked });
+      refetchPacking();
+    } catch {}
   };
 
-  const deleteItem = async (id: string) => {
-    await tripsApi.deletePackingItem(selectedTrip, id);
-    setItems(prev => prev.filter(i => i.id !== id));
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteItem(selectedTrip, id);
+      refetchPacking();
+    } catch {}
   };
 
   const resetAll = async () => {
-    for (const item of items.filter(i => i.isPacked)) {
-      await tripsApi.updatePackingItem(selectedTrip, item.id, { isPacked: false });
-    }
-    setItems(prev => prev.map(i => ({ ...i, isPacked: false })));
-    toast.success('Checklist reset');
+    try {
+      for (const item of items.filter(i => i.isPacked)) {
+        await updateItem(selectedTrip, item.id, { isPacked: false });
+      }
+      toast.success('Checklist reset');
+      refetchPacking();
+    } catch {}
   };
 
   const addSuggestion = async (name: string, cat: string) => {
     if (items.find(i => i.name === name)) { toast.error('Already in list'); return; }
-    const res = await tripsApi.addPackingItem(selectedTrip, { name, category: cat });
-    setItems(prev => [...prev, res.data]);
+    try {
+      await addItem(selectedTrip, { name, category: cat });
+      refetchPacking();
+    } catch {}
   };
 
   return (
@@ -121,8 +130,8 @@ export default function Packing() {
         </select>
         <input className="input" placeholder="Add item..." value={newItem}
           onChange={e => setNewItem(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addItem()} />
-        <button className="btn btn-primary" onClick={addItem}><Plus size={16} /></button>
+          onKeyDown={e => e.key === 'Enter' && handleAddItem()} />
+        <button className="btn btn-primary" onClick={handleAddItem}><Plus size={16} /></button>
       </div>
 
       <div className="grid-2">
@@ -145,7 +154,7 @@ export default function Packing() {
                   <span style={{ fontSize: 16 }}>{cat?.emoji}</span>
                   <span className="check-name" style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{item.name}</span>
                   <span className="badge badge-sky text-xs">{cat?.label}</span>
-                  <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger)' }} onClick={() => deleteItem(item.id)}>
+                  <button className="btn btn-ghost btn-icon" style={{ color: 'var(--danger)' }} onClick={() => handleDeleteItem(item.id)}>
                     <Trash2 size={13} />
                   </button>
                 </motion.div>

@@ -3,10 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import * as crypto from 'crypto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private repo: Repository<User>) {}
+  constructor(
+    @InjectRepository(User) private repo: Repository<User>,
+    private mailService: MailService,
+  ) {}
 
   findById(id: string) {
     return this.repo.findOne({ where: { id } });
@@ -26,7 +30,8 @@ export class UsersService {
       user.email_verify_expires = expires;
 
       delete data.email;
-      console.log(`[Stub Mailer] Verify URL: /api/users/verify-email?token=${rawToken}`);
+      const verifyUrl = `http://localhost:3000/api/users/verify-email?token=${rawToken}`; // assuming backend handles this directly or frontend route
+      await this.mailService.sendEmailVerification(user.pending_email, verifyUrl);
     }
 
     Object.assign(user, data);

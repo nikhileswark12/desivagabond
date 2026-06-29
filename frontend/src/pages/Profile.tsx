@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { useStore } from '../store';
 import { authApi } from '../api';
 import toast from 'react-hot-toast';
-import { User, Mail, Globe, Trash2, Save, Camera } from 'lucide-react';
+import { User, Mail, Globe, Trash2, Save } from 'lucide-react';
 
 export default function Profile() {
   const { user, setUser, logout } = useStore();

@@ -1,23 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { citiesApi } from '../api';
+import { useCities } from '../hooks/useCities';
 import { Search, Star } from 'lucide-react';
-import { cityBannerGradient } from '../constants/cityBannerGradients';
 import { getCityImage } from '../utils/cityImages';
 import { CityImage } from '../components/CityImage';
 
-interface CityHit {
-  id: string;
-  name: string;
-  state: string;
-  type: string;
-  region: string;
-  description: string;
-  popularity?: number;
-  costIndex?: string;
-  image?: string;
-}
 
 interface CityTypeOption {
   id: string;
@@ -26,29 +15,19 @@ interface CityTypeOption {
 }
 
 export default function CitySearch() {
-  const [cities, setCities] = useState<CityHit[]>([]);
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
   const [region, setRegion] = useState('');
   const [types, setTypes] = useState<CityTypeOption[]>([]);
   const [regions, setRegions] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+
+  const { cities } = useCities({ q: q || undefined, type: type || undefined, region: region || undefined, page: 1, limit: 50 });
+
   useEffect(() => {
     citiesApi.types().then(r => setTypes(r.data as CityTypeOption[]));
     citiesApi.regions().then(r => setRegions(r.data as string[]));
   }, []);
 
-  useEffect(() => {
-    setLoading(true);
-    citiesApi.list({ q: q || undefined, type: type || undefined, region: region || undefined, page: 1, limit: 50 })
-      .then(r => setCities(r.data.data))
-      .finally(() => setLoading(false));
-  }, [q, type, region]);
-
-  const emojiMap: Record<string, string> = {
-    'hill-station': '⛰️', beach: '🏖️', heritage: '🏛️',
-    tropical: '🌴', desert: '🏜️', wildlife: '🐯', metro: '🏙️',
-  };
 
   return (
     <Layout title="Explore Cities">

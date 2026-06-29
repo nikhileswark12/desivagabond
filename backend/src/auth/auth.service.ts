@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { User } from '../users/user.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -13,6 +14,7 @@ export class AuthService {
     @InjectRepository(User) private usersRepo: Repository<User>,
     @InjectRepository(PasswordResetToken) private resetTokenRepo: Repository<PasswordResetToken>,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async register(name: string, email: string, password: string) {
@@ -55,8 +57,8 @@ export class AuthService {
     });
     await this.resetTokenRepo.save(resetToken);
 
-    // In a real app, send email here. We'll just log it.
-    console.log(`[Email Stub] Password reset link for ${email}: /reset-password?token=${token}`);
+    const resetUrl = `http://localhost:5173/reset-password?token=${token}`;
+    await this.mailService.sendPasswordReset(user.email, resetUrl);
     return { message: 'If an account exists, a reset link was sent' };
   }
 

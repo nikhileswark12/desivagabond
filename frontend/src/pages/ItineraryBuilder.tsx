@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from '../components/Layout';
-import { tripsApi, citiesApi } from '../api';
+import { useTrips, useTrip } from '../hooks/useTrips';
+import { useCities } from '../hooks/useCities';
+import { useAddStop, useDeleteStop, useReorderStops } from '../hooks/useStops';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, GripVertical, MapPin, Calendar, Search, X, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Calendar, Search, X, ChevronDown, ChevronUp, ArrowRight } from 'lucide-react';
 import { useSortable, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
@@ -55,43 +57,38 @@ function StopItem({ stop, onDelete }: any) {
 export default function ItineraryBuilder() {
   const { id: paramId } = useParams();
   const navigate = useNavigate();
-  const [allTrips, setAllTrips] = useState<any[]>([]);
   const [selectedTripId, setSelectedTripId] = useState<string>(paramId || '');
-  const [trip, setTrip] = useState<any>(null);
   const [stops, setStops] = useState<any[]>([]);
-  const [cities, setCities] = useState<any[]>([]);
   const [showAddStop, setShowAddStop] = useState(false);
   const [citySearch, setCitySearch] = useState('');
   const [selectedCity, setSelectedCity] = useState<any>(null);
   const [stopForm, setStopForm] = useState({ arrivalDate: '', departureDate: '' });
-  const [loading, setLoading] = useState(false);
-  const [tripsLoading, setTripsLoading] = useState(true);
+
+  const { trips: allTrips, loading: tripsLoading } = useTrips({ page: 1, limit: 50 });
+  const { cities } = useCities({ page: 1, limit: 100 });
+  const { trip, loading } = useTrip(selectedTripId);
+  const { addStop } = useAddStop();
+  const { deleteStop } = useDeleteStop();
+  const { reorderStops } = useReorderStops();
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  // Load all trips for picker
   useEffect(() => {
-    tripsApi.list({ page: 1, limit: 50 }).then(r => {
-      setAllTrips(r.data.data);
-      if (!selectedTripId && r.data.data.length > 0) {
-        setSelectedTripId(r.data.data[0].id);
-        if (r.data.data.length === 1) {
-          toast('Auto-selected your only trip', { icon: 'ℹ️' });
-        }
+    if (!selectedTripId && allTrips && allTrips.length > 0) {
+      setSelectedTripId(allTrips[0].id);
+      if (allTrips.length === 1) {
+        toast('Auto-selected your only trip', { icon: 'ℹ️' });
       }
-    }).finally(() => setTripsLoading(false));
-    citiesApi.list({ page: 1, limit: 100 }).then(r => setCities(r.data.data));
-  }, []);
+    }
+  }, [allTrips, selectedTripId]);
 
-  // Load selected trip detail
   useEffect(() => {
-    if (!selectedTripId) return;
-    setLoading(true);
-    tripsApi.get(selectedTripId).then(r => {
-      setTrip(r.data);
-      setStops([...(r.data.stops || [])].sort((a: any, b: any) => a.orderIndex - b.orderIndex));
-    }).finally(() => setLoading(false));
-  }, [selectedTripId]);
+    if (trip) {
+      setStops([...(trip.stops || [])].sort((a: any, b: any) => a.orderIndex - b.orderIndex));
+    } else {
+      setStops([]);
+    }
+  }, [trip]);
 
   const filteredCities = cities.filter(c =>
     !citySearch || c.name.toLowerCase().includes(citySearch.toLowerCase()) || c.state.toLowerCase().includes(citySearch.toLowerCase())
@@ -103,14 +100,14 @@ export default function ItineraryBuilder() {
       return;
     }
     try {
-      const res = await tripsApi.addStop(selectedTripId, {
+      const resData = await addStop(selectedTripId, {
         cityName: selectedCity.name,
         cityId: selectedCity.id,
         state: selectedCity.state,
         region: selectedCity.region,
         ...stopForm,
       });
-      setStops(prev => [...prev, res.data]);
+      setStops(prev => [...prev, resData]);
       setShowAddStop(false);
       setSelectedCity(null);
       setStopForm({ arrivalDate: '', departureDate: '' });
@@ -123,9 +120,11 @@ export default function ItineraryBuilder() {
 
   const handleDelete = async (stopId: string) => {
     if (!confirm('Remove this stop?')) return;
-    await tripsApi.deleteStop(selectedTripId, stopId);
-    setStops(prev => prev.filter(s => s.id !== stopId));
-    toast.success('Stop removed');
+    try {
+      await deleteStop(selectedTripId, stopId);
+      setStops(prev => prev.filter(s => s.id !== stopId));
+      toast.success('Stop removed');
+    } catch {}
   };
 
   const handleDragEnd = async (event: any) => {
@@ -137,8 +136,10 @@ export default function ItineraryBuilder() {
     const [moved] = reordered.splice(oldIdx, 1);
     reordered.splice(newIdx, 0, moved);
     setStops(reordered);
-    await tripsApi.reorderStops(selectedTripId, reordered.map(s => s.id));
-    toast.success('Order updated');
+    try {
+      await reorderStops(selectedTripId, reordered.map(s => s.id));
+      toast.success('Order updated');
+    } catch {}
   };
 
   if (tripsLoading) return <Layout title="Itinerary Builder"><div style={{ textAlign: 'center', padding: 60 }}>Loading trips... 🗺️</div></Layout>;

@@ -13,7 +13,7 @@ export default function Login() {
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { setUser, setToken, theme } = useStore();
+  const { setUser, theme } = useStore();
   const navigate = useNavigate();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -31,7 +31,6 @@ export default function Login() {
         const res = tab === 'login'
           ? await authApi.login(form.email, form.password)
           : await authApi.register(form.name, form.email, form.password);
-        setToken(res.data.token);
         setUser(res.data.user);
         toast.success(`Welcome${tab === 'register' ? ' to DesiVagabond' : ' back'}, ${res.data.user.name}! 🌏`);
         navigate('/');
