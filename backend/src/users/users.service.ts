@@ -44,15 +44,16 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException('Invalid verification token');
     }
-    if (!user.pending_email) {
-      throw new BadRequestException('No pending email to verify');
-    }
     if (user.email_verify_expires && user.email_verify_expires < new Date()) {
       throw new BadRequestException('Verification token has expired');
     }
     
-    user.email = user.pending_email;
-    user.pending_email = null as any;
+    if (user.pending_email) {
+      user.email = user.pending_email;
+      user.pending_email = null as any;
+    }
+    
+    user.emailVerified = true;
     user.email_verify_token = null as any;
     user.email_verify_expires = null as any;
     await this.repo.save(user);

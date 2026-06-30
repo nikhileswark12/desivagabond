@@ -15,13 +15,21 @@ async function bootstrap() {
   await runSeed(dataSource);
 
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:4173'],
+    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:4173'],
     credentials: true,
   });
 
   app.use(cookieParser());
 
-  const csrfProtection = csurf({ cookie: { httpOnly: true, sameSite: 'strict' } });
+  // Note: COOKIE_SAME_SITE must be 'none' (with secure: true) if frontend and backend are on different domains in production
+  const csrfProtection = csurf({ 
+    cookie: { 
+      httpOnly: true, 
+      secure: true,
+      sameSite: (process.env.COOKIE_SAME_SITE as 'strict' | 'lax' | 'none') || 'strict',
+      domain: process.env.COOKIE_DOMAIN || undefined,
+    } 
+  });
   app.use((req: Request, res: Response, next: NextFunction) => {
     const skipPaths = [
       '/api/auth/login',
@@ -37,7 +45,11 @@ async function bootstrap() {
 
   app.use((req: Request, res: Response, next: NextFunction) => {
     if ((req as any).csrfToken) {
-      res.cookie('XSRF-TOKEN', (req as any).csrfToken(), { sameSite: 'strict' });
+      res.cookie('XSRF-TOKEN', (req as any).csrfToken(), {
+        secure: true,
+        sameSite: (process.env.COOKIE_SAME_SITE as 'strict' | 'lax' | 'none') || 'strict',
+        domain: process.env.COOKIE_DOMAIN || undefined,
+      });
     }
     next();
   });

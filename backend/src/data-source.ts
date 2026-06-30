@@ -17,7 +17,7 @@ const getDataSourceOptions = (): DataSourceOptions => {
       password: process.env.DB_PASSWORD || 'postgres',
       database: process.env.DB_NAME || 'traveloop',
       entities: ['src/**/*.entity{.ts,.js}', 'dist/**/*.entity{.js,.ts}'],
-      migrations: ['src/database/migrations/*{.ts,.js}'],
+      migrations: ['src/migrations/*{.ts,.js}'],
       synchronize: false,
     };
   }
@@ -30,7 +30,7 @@ const getDataSourceOptions = (): DataSourceOptions => {
     type: 'better-sqlite3',
     database: dbPath,
     entities: ['src/**/*.entity{.ts,.js}', 'dist/**/*.entity{.js,.ts}'],
-    migrations: ['src/database/migrations/*{.ts,.js}'],
+    migrations: ['src/migrations/*{.ts,.js}'],
     synchronize: false,
   };
 };

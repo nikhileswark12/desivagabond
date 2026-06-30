@@ -22,11 +22,13 @@ class LoginDto {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  // Note: COOKIE_SAME_SITE must be 'none' (with secure: true) if frontend and backend are on different domains in production
   private setCookie(res: Response, token: string) {
     res.cookie('jwt', token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: (process.env.COOKIE_SAME_SITE as 'strict' | 'lax' | 'none') || 'strict',
+      domain: process.env.COOKIE_DOMAIN || undefined,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }
@@ -34,9 +36,7 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
   async register(@Body() dto: RegisterDto, @Res({ passthrough: true }) res: Response) {
-    const data = await this.authService.register(dto.name, dto.email, dto.password);
-    this.setCookie(res, data.token);
-    return { user: data.user };
+    return this.authService.register(dto.name, dto.email, dto.password);
   }
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -52,7 +52,8 @@ export class AuthController {
     res.clearCookie('jwt', {
       httpOnly: true,
       secure: true,
-      sameSite: 'strict',
+      sameSite: (process.env.COOKIE_SAME_SITE as 'strict' | 'lax' | 'none') || 'strict',
+      domain: process.env.COOKIE_DOMAIN || undefined,
     });
     return { message: 'Logged out successfully' };
   }

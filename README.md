@@ -1,214 +1,196 @@
+# DesiVagabond
 
-# 🌍 DesiVagabond
+> A personalized travel planning and itinerary management platform for Indian destinations.
 
-> **A personalized travel planning platform designed to simplify and enhance the travel experience.**
-
-DesiVagabond allows users to create, manage, and share customized multi-city itineraries with budgeting, activity planning, and collaborative travel tools. The goal is to provide travelers with an intuitive and interactive platform where they can organize trips efficiently, visualize schedules, estimate expenses, and explore destinations seamlessly.
-
----
-
-## ✨ Features
-
-- 🔐 User Authentication (Login / Signup)
-- 🗺️ Create and Manage Trips
-- 🏙️ Multi-City Itinerary Builder
-- 🔍 Activity and Destination Search
-- 💰 Budget Estimation and Cost Breakdown
-- 🧳 Packing Checklist
-- 📓 Trip Notes and Journals
-- 🔗 Public / Shared Itinerary Links
-- 👤 User Profile and Preferences
-- 📊 Admin Analytics Dashboard
+DesiVagabond allows users to create, manage, and share customized multi-city itineraries with budgeting, activity planning, and collaborative travel tools. It provides travelers with an intuitive, interactive platform to organize trips efficiently, visualize schedules, estimate expenses, and explore destinations seamlessly.
 
 ---
 
-## 🛠️ Tech Stack
+## Features
 
-| Layer | Technology |
-|---|---|
-| **Frontend** | React, Vite, TypeScript, Tailwind CSS |
-| **Backend** | Node.js, NestJS, Prisma |
-| **Database** | SQLite |
-| **Version Control** | GitHub |
+- 🔐 JWT cookie-based auth with hard-gate email verification (must verify before first login)
+- 🗺️ Multi-city itinerary builder with drag-and-drop stop reordering (dnd-kit)
+- 💰 Budget tracking with Chart.js pie and bar visualizations
+- 🧳 Packing checklist with category filters and default suggestions
+- 📓 Trip journal and notes linked to specific itinerary stops
+- 🔗 Expiring public share links (token-based, 30-day TTL, daily cron cleanup)
+- 🏙️ City and activity directory for Indian destinations with search, filters, and pagination
+- 📊 Admin dashboard with platform stats, paginated audit logs, and cache management
+- 🌌 3D WebGL particle effects and interactive globe (Three.js) on auth and dashboard
+- 📜 "Explorer's Map" sepia parchment theme with GSAP navigation and Framer Motion transitions
 
 ---
 
-## 🚀 Installation & Setup
+## Tech Stack
 
-### 1. Clone the Repository
+| Frontend | Backend |
+| --- | --- |
+| React 19, TypeScript, Vite, Zustand 5, React Router 7, Three.js, GSAP, Framer Motion, Chart.js, dnd-kit, Axios, react-hot-toast, react-datepicker, Lucide React | NestJS 11, TypeORM, PostgreSQL (production) / SQLite (development), Passport + Passport-JWT, bcryptjs, csurf, @nestjs/throttler, @nestjs/cache-manager, @nestjs/schedule, Nodemailer, Docker + Docker Compose |
 
+---
+
+## Prerequisites
+
+- Node.js 20+
+- npm 10+
+- Docker + Docker Compose (required for PostgreSQL in production)
+- SMTP credentials (Ethereal auto-generated in dev if `MAIL_HOST` is not set)
+
+---
+
+## Getting Started
+
+### Clone
 ```bash
 git clone <repository-url>
-cd odoo-parul-virtual-round-NS
+cd desivagabond
 ```
 
-### 2. Frontend Setup
-
+### Root (run both services together)
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
 
-The frontend will start at: `http://localhost:5173`
-
-### 3. Backend Setup
-
+### Backend only
 ```bash
 cd backend
 npm install
-```
-
-Install required dependencies:
-
-```bash
-npm install @prisma/client prisma
-npm install @nestjs/jwt passport-jwt bcrypt
-npm install class-validator class-transformer
-npm install @nestjs/swagger swagger-ui-express
-```
-
-Initialize Prisma:
-
-```bash
-npx prisma init
-```
-
-Start the backend server:
-
-```bash
+cp .env.example .env
+npm run build
+npm run migration:run
 npm run start:dev
 ```
+Runs on `http://localhost:3000`
 
-The backend will run at: `http://localhost:3000`
-
-### 4. Database Migrations
-
-TypeORM is used for database interactions. While `synchronize` is enabled in development, **production deployments must run migrations manually** before starting the server.
-
-To generate a new migration after making entity changes:
+### Frontend only
 ```bash
-npm run migration:generate src/migrations/MigrationName
+cd frontend
+npm install
+# Set VITE_API_URL in frontend/.env if not using http://localhost:3000/api
+npm run dev
 ```
+Runs on `http://localhost:5173`
 
-To run pending migrations (required in production):
+### Docker (full stack with PostgreSQL)
 ```bash
-npm run migration:run
+docker-compose up --build
 ```
+Starts NestJS API on port 3000 and PostgreSQL automatically.
+*Note: set `DB_TYPE=postgres` and all `DB_` vars in `backend/.env` before running.*
 
 ---
 
-## 🔐 Environment Variables
+## Environment Variables
 
-Create a `.env` file inside the `backend/` directory:
+### Backend (`backend/.env`)
 
-```env
-DATABASE_URL="file:./dev.db"
-JWT_SECRET="your-secret-key"
-PORT=3000
-```
+| Variable | Example | Description |
+| --- | --- | --- |
+| `DB_TYPE` | `sqlite` | Database driver: 'sqlite' or 'postgres' |
+| `DB_HOST` | `localhost` | PostgreSQL host (postgres only) |
+| `DB_PORT` | `5432` | PostgreSQL port (postgres only) |
+| `DB_USER` | `traveloop_user` | PostgreSQL username (postgres only) |
+| `DB_PASSWORD` | `traveloop_pass` | PostgreSQL password (postgres only) |
+| `DB_NAME` | `traveloop` | PostgreSQL database name (postgres only) |
+| `DB_PATH` | `./data/traveloop.db` | SQLite file path (sqlite only) |
+| `JWT_SECRET` | `change_me` | Secret used to sign JWT tokens |
+| `JWT_EXPIRY` | `7d` | JWT token lifespan |
+| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
+| `COOKIE_SAME_SITE` | `strict` | Cookie SameSite policy (use 'none' for cross-domain) |
+| `COOKIE_DOMAIN` | | Cookie domain (leave empty for localhost) |
+| `PORT` | `3000` | Port the API runs on |
+| `SHARE_EXPIRY_DAYS` | `30` | Days before a public share link expires |
+| `MAIL_HOST` | `smtp.ethereal.email` | SMTP host (Ethereal auto-created in dev if omitted) |
+| `MAIL_PORT` | `587` | SMTP port |
+| `MAIL_USER` | | SMTP username |
+| `MAIL_PASS` | | SMTP password |
 
-## 🏗️ Architecture
+### Frontend (`frontend/.env`)
 
-```mermaid
-flowchart TD
-  Browser --> Nginx
-  Nginx --> NestJS
-  NestJS --> PostgreSQL[(PostgreSQL via Docker)]
-  NestJS --> Cache[(In-Memory Cache)]
-```
+| Variable | Example | Description |
+| --- | --- | --- |
+| `VITE_API_URL` | `http://localhost:3000/api` | Backend API base URL |
 
 ---
 
-## 🗄️ Database
+## Database Migrations
 
-DesiVagabond supports both **SQLite** (default fallback) and **PostgreSQL**.
+- `synchronize` is disabled in production; all schema changes go through migration files.
+- 7 migrations exist covering the full schema history.
+- Commands:
+  ```bash
+  npm run migration:generate src/migrations/MigrationName
+  npm run migration:run
+  npm run migration:revert
+  ```
+- *Note: the `AddEmailVerifiedToUser` migration includes a backfill that sets `emailVerified=true` on all pre-existing accounts so they are not locked out after upgrading.*
 
-### Configuring the Database
-By default, the backend will use SQLite stored in `./data/traveloop.db`. To use PostgreSQL, configure the following environment variables in your `backend/.env` file:
+---
 
-```env
-DB_TYPE=postgres
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=traveloop_user
-DB_PASSWORD=traveloop_password
-DB_NAME=traveloop
-```
-
-### Running with Docker Compose (PostgreSQL)
-A `docker-compose.yml` file is provided to quickly spin up the app connected to a PostgreSQL instance:
+## Running Tests
 
 ```bash
-docker-compose up -d
-```
-
-The database manages:
-- Users
-- Trips
-- Itineraries
-- Activities
-- Budgets
-- Notes
-- Shared Trips
-- Packing Lists
-
----
-
-## 🌿 Recommended Development Workflow
-
-### Branches
-
-```
-main
-frontend
-backend
-```
-
-### Workflow
-
-- Frontend development happens in the `frontend` branch
-- Backend development happens in the `backend` branch
-- Stable, reviewed code is merged into `main`
-
----
-
-## 📖 API Documentation
-
-API documentation is available via **Swagger UI** after starting the backend server.
-
-Example endpoint structure:
-
-```
-GET    /trips
-POST   /trips
-GET    /trips/:id
-PUT    /trips/:id
-DELETE /trips/:id
+cd backend && npm run test        # unit tests (auth, trips, admin, users, mail)
+cd backend && npm run test:e2e    # end-to-end tests
 ```
 
 ---
 
-## 🔮 Future Enhancements
+## Project Structure
 
-- 🤖 AI-powered itinerary generation
-- 🤝 Real-time collaboration
-- 💡 Smart budget optimization
-- 🗺️ Map integration
-- 🎯 Activity recommendations
-- 🌤️ Weather integration
-- 📈 Travel analytics
-- 📱 Mobile application support
+```
+.
+├── backend
+│   └── src
+│       ├── activities
+│       ├── admin
+│       ├── auth
+│       ├── cities
+│       ├── mail
+│       ├── shared
+│       ├── trips
+│       └── users
+├── frontend
+│   └── src
+│       ├── components
+│       ├── hooks
+│       └── pages
+├── docker-compose.yml
+└── package.json
+```
 
 ---
 
-## 👥 Contributors
+## API Overview
+
+| Group | Base Path | Auth Required | Notes |
+| --- | --- | --- | --- |
+| Auth | `/api/auth` | No (except `/me`) | Login, register, logout, forgot/reset password |
+| Users | `/api/users` | No (`verify-email`) / Yes (`profile`) | Profile, email verify, account delete |
+| Trips | `/api/trips` | Yes | CRUD, share toggle, paginated list |
+| Stops | `/api/trips/:id/stops` | Yes | Add, delete, reorder, activities |
+| Shared | `/api/shared/:token` | No | Public read-only itinerary view |
+| Cities | `/api/cities` | No | Directory with filters, types, regions |
+| Activities | `/api/activities` | No | Directory with city/category/cost filters |
+| Admin | `/api/admin` | Yes (admin role) | Stats, audit logs, cache clear |
+
+---
+
+## Security
+
+- JWT stored in `httpOnly` cookie (7d TTL, secure, sameSite strict)
+- Hard-gate email verification: login blocked until email is verified
+- CSRF protection: csurf middleware issues `XSRF-TOKEN` cookie; frontend sends it as `X-CSRF-Token` header
+- Rate limiting: 10 req/min globally, 5 req/min on auth endpoints via `@nestjs/throttler`
+- bcrypt with 12 salt rounds for password hashing
+- All destructive actions (trip/stop/item deletes) written to `audit_logs` table
+
+---
+
+## Contributors
 
 | Name | Role |
 |---|---|
 | [Srikara Varadan](https://github.com/) | Frontend Developer |
 | [Nikhileswar](https://github.com/) | Backend Developer |
-
----
-
-> Built with ❤️ for travelers everywhere.

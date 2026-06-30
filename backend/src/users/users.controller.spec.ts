@@ -5,7 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let usersService: jest.Mocked<UsersService>;
+  let service: UsersService;
 
   beforeEach(async () => {
     const mockUsersService = {
@@ -26,82 +26,86 @@ describe('UsersController', () => {
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
-    usersService = module.get(UsersService);
+    service = module.get<UsersService>(UsersService);
   });
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
+  describe('getProfile', () => {
+    it("returns the authenticated user's profile object", async () => {
+      const mockProfile = { id: 'uuid-1', name: 'Test User' };
+      (service.findById as jest.Mock).mockResolvedValue(mockProfile);
 
-  describe('GET /users/profile', () => {
-    it('returns user profile object for authenticated user', async () => {
-      const mockUser = { id: 'u1', email: 'test@test.com', name: 'Test' };
-      usersService.findById.mockResolvedValue(mockUser as any);
-      
-      const req = { user: { sub: 'u1' } };
+      const req = { user: { sub: 'uuid-1' } };
       const result = await controller.getProfile(req);
-      
-      expect(usersService.findById).toHaveBeenCalledWith('u1');
-      expect(result).toEqual(mockUser);
+
+      expect(service.findById).toHaveBeenCalledWith('uuid-1');
+      expect(result).toEqual(mockProfile);
     });
   });
 
-  describe('PUT /users/profile', () => {
-    it('returns updated profile; excludes password and role from payload', async () => {
-      const mockUpdated = { id: 'u1', name: 'New Name' };
-      usersService.update.mockResolvedValue(mockUpdated as any);
-      
-      const req = { user: { sub: 'u1' } };
-      const body = { name: 'New Name', password: 'hack', role: 'admin', someField: 'value' };
+  describe('updateProfile', () => {
+    it('returns updated profile; strips password and role from the incoming payload before calling the service', async () => {
+      const mockUpdatedProfile = { id: 'uuid-1', name: 'Updated Name' };
+      (service.update as jest.Mock).mockResolvedValue(mockUpdatedProfile);
+
+      const req = { user: { sub: 'uuid-1' } };
+      const body = { name: 'Updated Name', password: 'newpass', role: 'admin', someOtherField: 'value' };
       
       const result = await controller.updateProfile(req, body);
-      
-      expect(usersService.update).toHaveBeenCalledWith('u1', { name: 'New Name', someField: 'value' });
-      expect(result).toEqual(mockUpdated);
+
+      expect(service.update).toHaveBeenCalledWith('uuid-1', { name: 'Updated Name', someOtherField: 'value' });
+      expect(result).toEqual(mockUpdatedProfile);
     });
 
-    it('saves to pending_email, does not immediately update email', async () => {
-      const mockUpdated = { id: 'u1', email: 'old@test.com', pending_email: 'new@test.com' };
-      usersService.update.mockResolvedValue(mockUpdated as any);
-      
-      const req = { user: { sub: 'u1' } };
-      const body = { email: 'new@test.com' };
+    it('saves to pending_email, does not overwrite email immediately', async () => {
+      // The controller just passes the payload (sans password/role) to the service, where the pending_email logic resides.
+      // We test that the controller passes the email correctly.
+      const mockUpdatedProfile = { id: 'uuid-1', pending_email: 'new@email.com' };
+      (service.update as jest.Mock).mockResolvedValue(mockUpdatedProfile);
+
+      const req = { user: { sub: 'uuid-1' } };
+      const body = { email: 'new@email.com' };
       
       const result = await controller.updateProfile(req, body);
-      
-      expect(usersService.update).toHaveBeenCalledWith('u1', { email: 'new@test.com' });
-      expect(result).toEqual(mockUpdated);
+
+      expect(service.update).toHaveBeenCalledWith('uuid-1', { email: 'new@email.com' });
+      expect(result).toEqual(mockUpdatedProfile);
     });
   });
 
-  describe('DELETE /users/account', () => {
-    it('returns { message: "Account deleted" } for authenticated user', async () => {
-      usersService.delete.mockResolvedValue({ message: 'Account deleted' } as any);
-      
-      const req = { user: { sub: 'u1' } };
+  describe('deleteAccount', () => {
+    it("returns { message: 'Account deleted' } for the authenticated user", async () => {
+      const mockResponse = { message: 'Account deleted' };
+      (service.delete as jest.Mock).mockResolvedValue(mockResponse);
+
+      const req = { user: { sub: 'uuid-1' } };
       const result = await controller.deleteAccount(req);
-      
-      expect(usersService.delete).toHaveBeenCalledWith('u1');
-      expect(result).toEqual({ message: 'Account deleted' });
+
+      expect(service.delete).toHaveBeenCalledWith('uuid-1');
+      expect(result).toEqual(mockResponse);
     });
   });
 
-  describe('GET /users/verify-email', () => {
-    it('returns { message: "Email verified successfully", email } for valid token', async () => {
-      const mockResponse = { message: 'Email verified successfully', email: 'verified@test.com' };
-      usersService.verifyEmail.mockResolvedValue(mockResponse as any);
-      
-      const result = await controller.verifyEmail('valid-token');
-      
-      expect(usersService.verifyEmail).toHaveBeenCalledWith('valid-token');
+  describe('verifyEmail', () => {
+    it("returns { message: 'Email verified successfully', email }", async () => {
+      const mockResponse = { message: 'Email verified successfully', email: 'test@example.com' };
+      (service.verifyEmail as jest.Mock).mockResolvedValue(mockResponse);
+
+      const result = await controller.verifyEmail('valid');
+
+      expect(service.verifyEmail).toHaveBeenCalledWith('valid');
       expect(result).toEqual(mockResponse);
     });
 
     it('throws BadRequestException for expired token', async () => {
-      usersService.verifyEmail.mockRejectedValue(new BadRequestException('Token expired'));
-      
-      await expect(controller.verifyEmail('expired-token')).rejects.toThrow(BadRequestException);
-      expect(usersService.verifyEmail).toHaveBeenCalledWith('expired-token');
+      (service.verifyEmail as jest.Mock).mockRejectedValue(new BadRequestException('Verification token has expired'));
+
+      await expect(controller.verifyEmail('expired')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException for invalid token', async () => {
+      (service.verifyEmail as jest.Mock).mockRejectedValue(new BadRequestException('Invalid verification token'));
+
+      await expect(controller.verifyEmail('invalid')).rejects.toThrow(BadRequestException);
     });
   });
 });

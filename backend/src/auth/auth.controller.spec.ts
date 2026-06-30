@@ -43,15 +43,15 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    it('returns 201 with user object on valid input', async () => {
-      const user = { id: 1, email: 'test@test.com' };
-      mockAuthService.register.mockResolvedValue({ user, token: 'fake-jwt' });
+    it('returns 201 with a success message on valid input (Hard Gate)', async () => {
+      const message = 'Registration successful. Please check your email to verify your account.';
+      mockAuthService.register.mockResolvedValue({ message });
       const res = mockResponse();
       
       const result = await controller.register({ name: 'Test', email: 'test@test.com', password: 'password123' }, res);
       
-      expect(result).toEqual({ user });
-      expect(res.cookie).toHaveBeenCalledWith('jwt', 'fake-jwt', expect.any(Object));
+      expect(result).toEqual({ message });
+      expect(res.cookie).not.toHaveBeenCalled();
     });
 
     it('throws ConflictException on duplicate email', async () => {

@@ -11,6 +11,7 @@ import { Eye, EyeOff, Mail, Lock, User } from 'lucide-react';
 export default function Login() {
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
   const [form, setForm] = useState({ name: '', email: '', password: '' });
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const { setUser, theme } = useStore();
@@ -27,19 +28,24 @@ export default function Login() {
         const res = await axios.post('/api/auth/forgot-password', { email: form.email });
         toast.success(res.data.message || 'Check your email for a reset link! 📧');
         setTab('login');
+      } else if (tab === 'register') {
+        await authApi.register(form.name, form.email, form.password);
+        setRegisteredEmail(form.email);
       } else {
-        const res = tab === 'login'
-          ? await authApi.login(form.email, form.password)
-          : await authApi.register(form.name, form.email, form.password);
+        const res = await authApi.login(form.email, form.password);
         setUser(res.data.user);
-        toast.success(`Welcome${tab === 'register' ? ' to DesiVagabond' : ' back'}, ${res.data.user.name}! 🌏`);
+        toast.success(`Welcome back, ${res.data.user.name}! 🌏`);
         navigate('/');
       }
     } catch (err: unknown) {
-      const message = axios.isAxiosError(err) && typeof err.response?.data === 'object' && err.response.data && 'message' in err.response.data
-        ? String((err.response.data as { message: unknown }).message)
-        : 'Something went wrong';
-      toast.error(message);
+      if (axios.isAxiosError(err) && err.response?.status === 403 && tab === 'login') {
+        toast.error('Please verify your email before signing in.');
+      } else {
+        const message = axios.isAxiosError(err) && typeof err.response?.data === 'object' && err.response.data && 'message' in err.response.data
+          ? String((err.response.data as { message: unknown }).message)
+          : 'Something went wrong';
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -77,61 +83,81 @@ export default function Login() {
         </div>
 
         {/* Tabs */}
-        <div className="tabs mb-6">
-          <button className={`tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Sign In</button>
-          <button className={`tab${tab === 'register' ? ' active' : ''}`} onClick={() => setTab('register')}>Create Account</button>
-        </div>
-
-        <form onSubmit={handle}>
-          {tab === 'register' && (
-            <motion.div className="form-group" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-              <label className="form-label">Full Name</label>
-              <div style={{ position: 'relative' }}>
-                <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input className="input" style={{ paddingLeft: 38 }} placeholder="Your name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
-              </div>
-            </motion.div>
-          )}
-
-          <div className="form-group">
-            <label className="form-label">Email Address</label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input className="input" style={{ paddingLeft: 38 }} type="email" placeholder="you@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
-            </div>
+        {!registeredEmail && (
+          <div className="tabs mb-6">
+            <button className={`tab${tab === 'login' ? ' active' : ''}`} onClick={() => setTab('login')}>Sign In</button>
+            <button className={`tab${tab === 'register' ? ' active' : ''}`} onClick={() => setTab('register')}>Create Account</button>
           </div>
+        )}
 
-          {tab !== 'forgot' && (
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input className="input" style={{ paddingLeft: 38, paddingRight: 40 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
-                <button type="button" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowPw(!showPw)}>
-                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+        {registeredEmail ? (
+          <motion.div className="text-center py-8" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <div style={{ width: 64, height: 64, background: 'var(--sky-700)', borderRadius: '50%', margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Mail size={32} color="white" />
+            </div>
+            <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--text)' }}>Check your inbox</h2>
+            <p className="text-muted mb-8" style={{ lineHeight: 1.6 }}>
+              We sent a verification link to <strong>{registeredEmail}</strong>.<br/>
+              Click it to activate your account, then sign in.
+            </p>
+            <button className="btn btn-primary w-full" onClick={() => { setRegisteredEmail(null); setTab('login'); setForm({ ...form, password: '' }); }} style={{ justifyContent: 'center' }}>
+              Back to Login
+            </button>
+          </motion.div>
+        ) : (
+          <>
+            <form onSubmit={handle}>
+              {tab === 'register' && (
+                <motion.div className="form-group" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                  <label className="form-label">Full Name</label>
+                  <div style={{ position: 'relative' }}>
+                    <User size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input className="input" style={{ paddingLeft: 38 }} placeholder="Your name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                  </div>
+                </motion.div>
+              )}
+
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input className="input" style={{ paddingLeft: 38 }} type="email" placeholder="you@email.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required />
+                </div>
               </div>
-              {tab === 'login' && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-                  <button type="button" style={{ background: 'none', border: 'none', color: 'var(--sky-500)', fontSize: 13, cursor: 'pointer' }} onClick={() => setTab('forgot')}>
-                    Forgot password?
-                  </button>
+
+              {tab !== 'forgot' && (
+                <div className="form-group">
+                  <label className="form-label">Password</label>
+                  <div style={{ position: 'relative' }}>
+                    <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                    <input className="input" style={{ paddingLeft: 38, paddingRight: 40 }} type={showPw ? 'text' : 'password'} placeholder="••••••••" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} required minLength={6} />
+                    <button type="button" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setShowPw(!showPw)}>
+                      {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  {tab === 'login' && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                      <button type="button" style={{ background: 'none', border: 'none', color: 'var(--sky-500)', fontSize: 13, cursor: 'pointer' }} onClick={() => setTab('forgot')}>
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-          )}
 
-          <button type="submit" className="btn btn-primary w-full" style={{ justifyContent: 'center', marginTop: 8 }} disabled={loading}>
-            {loading ? '⏳ Please wait...' : tab === 'login' ? '🚀 Sign In' : tab === 'register' ? '✨ Create Account' : '📧 Send Reset Link'}
-          </button>
-        </form>
+              <button type="submit" className="btn btn-primary w-full" style={{ justifyContent: 'center', marginTop: 8 }} disabled={loading}>
+                {loading ? '⏳ Please wait...' : tab === 'login' ? '🚀 Sign In' : tab === 'register' ? '✨ Create Account' : '📧 Send Reset Link'}
+              </button>
+            </form>
 
-        <p className="text-sm text-muted" style={{ textAlign: 'center', marginTop: 20 }}>
-          {tab === 'login' ? "Don't have an account? " : tab === 'forgot' ? "Remembered your password? " : "Already have an account? "}
-          <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sky-500)', fontWeight: 600 }} onClick={() => setTab(tab === 'login' || tab === 'forgot' ? 'register' : 'login')}>
-            {tab === 'login' || tab === 'forgot' ? 'Sign up free' : 'Sign in'}
-          </button>
-        </p>
+            <p className="text-sm text-muted" style={{ textAlign: 'center', marginTop: 20 }}>
+              {tab === 'login' ? "Don't have an account? " : tab === 'forgot' ? "Remembered your password? " : "Already have an account? "}
+              <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--sky-500)', fontWeight: 600 }} onClick={() => { setTab(tab === 'login' || tab === 'forgot' ? 'register' : 'login'); setForm({ ...form, password: '' }); }}>
+                {tab === 'login' || tab === 'forgot' ? 'Sign up free' : 'Sign in'}
+              </button>
+            </p>
+          </>
+        )}
       </motion.div>
     </div>
   );

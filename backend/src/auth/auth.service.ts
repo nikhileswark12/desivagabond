@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan, IsNull } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -20,11 +20,27 @@ export class AuthService {
   async register(name: string, email: string, password: string) {
     const existing = await this.usersRepo.findOne({ where: { email } });
     if (existing) throw new ConflictException('Email already registered');
+    
     const hashed = await bcrypt.hash(password, 12);
-    const user = this.usersRepo.create({ name, email, password: hashed });
+    
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const emailVerifyToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 24);
+
+    const user = this.usersRepo.create({ 
+      name, 
+      email, 
+      password: hashed,
+      email_verify_token: emailVerifyToken,
+      email_verify_expires: expires
+    });
     await this.usersRepo.save(user);
-    const token = this.jwtService.sign({ sub: user.id, email: user.email, role: user.role });
-    return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
+
+    const verifyUrl = `http://localhost:3000/api/users/verify-email?token=${rawToken}`;
+    await this.mailService.sendEmailVerification(user.email, verifyUrl);
+
+    return { message: 'Registration successful. Please check your email to verify your account.' };
   }
 
   async login(email: string, password: string) {
@@ -32,6 +48,11 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('Invalid credentials');
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
+    
+    if (!user.emailVerified) {
+      throw new ForbiddenException('Please verify your email to log in');
+    }
+
     const token = this.jwtService.sign({ sub: user.id, email: user.email, role: user.role });
     return { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } };
   }
