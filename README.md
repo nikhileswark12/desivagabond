@@ -1,196 +1,398 @@
 # DesiVagabond
 
-> A personalized travel planning and itinerary management platform for Indian destinations.
+## Intelligent Travel Planning & Itinerary Management Platform
 
-DesiVagabond allows users to create, manage, and share customized multi-city itineraries with budgeting, activity planning, and collaborative travel tools. It provides travelers with an intuitive, interactive platform to organize trips efficiently, visualize schedules, estimate expenses, and explore destinations seamlessly.
+DesiVagabond is an intelligent travel planning and itinerary management platform designed to simplify trip organization through personalized itinerary creation, collaborative planning, budget management, and destination discovery. Built with modern web technologies, the platform enables travelers to seamlessly plan multi-city journeys, manage travel expenses, organize activities, and share itineraries through an intuitive and interactive user experience.
 
----
+Planning a trip often involves juggling multiple applications for budgeting, destination research, itinerary creation, note-taking, and collaboration. This fragmented approach makes travel planning inefficient and difficult to manage, particularly for longer journeys involving multiple destinations and travelers. DesiVagabond addresses these challenges by providing a unified platform where every aspect of trip planning can be managed from a single interface.
 
-## Features
-
-- 🔐 JWT cookie-based auth with hard-gate email verification (must verify before first login)
-- 🗺️ Multi-city itinerary builder with drag-and-drop stop reordering (dnd-kit)
-- 💰 Budget tracking with Chart.js pie and bar visualizations
-- 🧳 Packing checklist with category filters and default suggestions
-- 📓 Trip journal and notes linked to specific itinerary stops
-- 🔗 Expiring public share links (token-based, 30-day TTL, daily cron cleanup)
-- 🏙️ City and activity directory for Indian destinations with search, filters, and pagination
-- 📊 Admin dashboard with platform stats, paginated audit logs, and cache management
-- 🌌 3D WebGL particle effects and interactive globe (Three.js) on auth and dashboard
-- 📜 "Explorer's Map" sepia parchment theme with GSAP navigation and Framer Motion transitions
+Designed with scalability, performance, and user experience in mind, DesiVagabond combines a modern React frontend with a robust NestJS backend to deliver a feature-rich travel ecosystem. From intelligent itinerary management and budget visualization to secure authentication and collaborative sharing, the platform provides travelers with the tools needed to plan memorable journeys efficiently while offering developers a clean, modular architecture for future enhancements.
 
 ---
 
-## Tech Stack
+## Vision
 
-| Frontend | Backend |
-| --- | --- |
-| React 19, TypeScript, Vite, Zustand 5, React Router 7, Three.js, GSAP, Framer Motion, Chart.js, dnd-kit, Axios, react-hot-toast, react-datepicker, Lucide React | NestJS 11, TypeORM, PostgreSQL (production) / SQLite (development), Passport + Passport-JWT, bcryptjs, csurf, @nestjs/throttler, @nestjs/cache-manager, @nestjs/schedule, Nodemailer, Docker + Docker Compose |
+To build a modern travel planning ecosystem that enables travelers to organize, collaborate, and explore destinations through intelligent itinerary management, interactive visualization, and personalized travel experiences.
 
 ---
 
-## Prerequisites
+## Problem Statement
 
-- Node.js 20+
-- npm 10+
-- Docker + Docker Compose (required for PostgreSQL in production)
-- SMTP credentials (Ethereal auto-generated in dev if `MAIL_HOST` is not set)
+Travel planning has become increasingly complex as travelers rely on multiple disconnected applications to manage itineraries, budgets, destinations, accommodation details, travel notes, and activity schedules. Information is often scattered across spreadsheets, messaging applications, note-taking platforms, and booking websites, making it difficult to maintain a clear overview of an entire journey.
+
+Collaborative trip planning introduces additional challenges, including itinerary coordination, budget tracking, destination research, and schedule management among multiple travelers. Without a centralized platform, planning becomes time-consuming, error-prone, and difficult to update.
+
+Some of the primary challenges include:
+
+* Fragmented travel planning across multiple applications.
+* Difficulty organizing multi-city travel itineraries.
+* Limited tools for collaborative trip planning.
+* Inefficient travel budget management and expense tracking.
+* Poor visualization of travel schedules and destinations.
+* Lack of integrated trip journals, packing lists, and travel notes.
+* Limited itinerary sharing capabilities.
+
+DesiVagabond addresses these challenges by integrating itinerary planning, budgeting, destination discovery, collaboration, and travel management into a single intelligent platform that simplifies the entire travel planning process.
+
+---
+
+## Core Features
+
+DesiVagabond provides a comprehensive set of features designed to enhance every stage of travel planning, including:
+
+* Secure JWT-based authentication with mandatory email verification.
+* Personalized multi-city itinerary creation and management.
+* Drag-and-drop itinerary organization for flexible trip planning.
+* Interactive travel budget tracking with graphical insights.
+* Packing checklist with categorized recommendations.
+* Trip journals and notes linked to itinerary destinations.
+* Public itinerary sharing through secure, expiring share links.
+* Destination and activity directory covering Indian tourist locations.
+* Administrative dashboard for platform management and monitoring.
+* Interactive visual experiences powered by Three.js and modern animations.
+* Responsive interface optimized for desktop and mobile devices.
+
+---
+
+## Technology Stack
+
+### Frontend
+
+* React 19
+* TypeScript
+* Vite
+* Zustand
+* React Router
+* Three.js
+* GSAP
+* Framer Motion
+* Chart.js
+* dnd-kit
+* Axios
+* React Hot Toast
+* React Datepicker
+
+### Backend
+
+* NestJS
+* TypeORM
+* Passport
+* Passport JWT
+* bcryptjs
+* csurf
+* NestJS Throttler
+* Cache Manager
+* Nodemailer
+
+### Database
+
+* PostgreSQL
+* SQLite (Development)
+
+### Infrastructure
+
+* Docker
+* Docker Compose
+
+---
+
+## System Architecture
+
+DesiVagabond follows a modular client-server architecture that separates presentation, business logic, authentication, and data persistence into independent layers.
+
+The frontend provides an interactive interface for itinerary planning, budget visualization, destination exploration, and collaborative travel management. React components communicate with a RESTful NestJS backend responsible for authentication, authorization, itinerary management, administrative services, and secure API operations.
+
+Application data is stored within PostgreSQL for production deployments, while SQLite provides a lightweight development environment. Authentication is implemented using JWT stored in secure HTTP-only cookies, supported by CSRF protection, role-based authorization, and rate limiting to ensure platform security.
+
+The modular architecture enables independent development of frontend and backend services while supporting future expansion through additional APIs, third-party integrations, and scalable deployment strategies.
+
+---
+
+## Design Principles
+
+DesiVagabond is developed around several architectural principles:
+
+* User-centric travel planning experience.
+* Modular and maintainable application architecture.
+* Secure authentication and authorization.
+* Responsive and accessible user interface.
+* Interactive data visualization for budgeting and planning.
+* Clean separation between frontend and backend services.
+* Scalable infrastructure for future platform growth.
+* Performance-focused application design.
+* Extensible architecture for travel-related integrations.
+
+---
+
+## Future Scope
+
+DesiVagabond is designed to evolve into a comprehensive intelligent travel ecosystem. Planned enhancements include AI-assisted itinerary generation, personalized destination recommendations, weather-aware trip planning, accommodation and transportation integrations, interactive mapping, offline itinerary synchronization, expense sharing among travel groups, multilingual support, mobile applications, and real-time collaborative planning capabilities.
+
+The long-term objective is to transform DesiVagabond into a complete travel companion that combines intelligent planning, seamless collaboration, and immersive destination discovery within a unified platform, enabling travelers to plan and manage every aspect of their journeys with confidence.
 
 ---
 
 ## Getting Started
 
-### Clone
-```bash
+### Prerequisites
+
+* Node.js 20+
+* npm 10+
+* Docker & Docker Compose (for PostgreSQL deployments)
+* SMTP credentials (optional for development)
+
+
+## Installation
+
+### Clone the Repository
+
+```bash id="rknpju"
 git clone <repository-url>
 cd desivagabond
 ```
 
-### Root (run both services together)
-```bash
-npm install
-npm run dev
-```
+---
 
-### Backend only
-```bash
-cd backend
-npm install
-cp .env.example .env
-npm run build
-npm run migration:run
-npm run start:dev
-```
-Runs on `http://localhost:3000`
+### Install Dependencies
 
-### Frontend only
-```bash
-cd frontend
-npm install
-# Set VITE_API_URL in frontend/.env if not using http://localhost:3000/api
-npm run dev
-```
-Runs on `http://localhost:5173`
+Install the project dependencies from the repository root.
 
-### Docker (full stack with PostgreSQL)
-```bash
-docker-compose up --build
+```bash id="lgqj4w"
+npm install
 ```
-Starts NestJS API on port 3000 and PostgreSQL automatically.
-*Note: set `DB_TYPE=postgres` and all `DB_` vars in `backend/.env` before running.*
 
 ---
 
-## Environment Variables
+### Run the Complete Application
 
-### Backend (`backend/.env`)
+Launch both the frontend and backend services simultaneously during development.
 
-| Variable | Example | Description |
-| --- | --- | --- |
-| `DB_TYPE` | `sqlite` | Database driver: 'sqlite' or 'postgres' |
-| `DB_HOST` | `localhost` | PostgreSQL host (postgres only) |
-| `DB_PORT` | `5432` | PostgreSQL port (postgres only) |
-| `DB_USER` | `traveloop_user` | PostgreSQL username (postgres only) |
-| `DB_PASSWORD` | `traveloop_pass` | PostgreSQL password (postgres only) |
-| `DB_NAME` | `traveloop` | PostgreSQL database name (postgres only) |
-| `DB_PATH` | `./data/traveloop.db` | SQLite file path (sqlite only) |
-| `JWT_SECRET` | `change_me` | Secret used to sign JWT tokens |
-| `JWT_EXPIRY` | `7d` | JWT token lifespan |
-| `CORS_ORIGINS` | `http://localhost:5173` | Comma-separated allowed origins |
-| `COOKIE_SAME_SITE` | `strict` | Cookie SameSite policy (use 'none' for cross-domain) |
-| `COOKIE_DOMAIN` | | Cookie domain (leave empty for localhost) |
-| `PORT` | `3000` | Port the API runs on |
-| `SHARE_EXPIRY_DAYS` | `30` | Days before a public share link expires |
-| `MAIL_HOST` | `smtp.ethereal.email` | SMTP host (Ethereal auto-created in dev if omitted) |
-| `MAIL_PORT` | `587` | SMTP port |
-| `MAIL_USER` | | SMTP username |
-| `MAIL_PASS` | | SMTP password |
+```bash id="xujygv"
+npm run dev
+```
 
-### Frontend (`frontend/.env`)
+---
 
-| Variable | Example | Description |
-| --- | --- | --- |
-| `VITE_API_URL` | `http://localhost:3000/api` | Backend API base URL |
+### Backend Setup
+
+Navigate to the backend directory and configure the application.
+
+```bash id="fthifx"
+cd backend
+
+npm install
+
+cp .env.example .env
+
+npm run build
+
+npm run migration:run
+
+npm run start:dev
+```
+
+The backend service runs on:
+
+```id="ylr37d"
+http://localhost:3000
+```
+
+---
+
+### Frontend Setup
+
+Navigate to the frontend directory.
+
+```bash id="1vb3c8"
+cd frontend
+
+npm install
+
+npm run dev
+```
+
+If required, configure the backend API endpoint inside `frontend/.env`.
+
+```env id="v2s15m"
+VITE_API_URL=http://localhost:3000/api
+```
+
+The frontend application runs on:
+
+```id="psbb1j"
+http://localhost:5173
+```
+
+---
+
+## Docker Deployment
+
+DesiVagabond supports containerized deployment using Docker Compose, enabling both frontend and backend services to run alongside PostgreSQL within an isolated environment.
+
+Start the complete application stack using:
+
+```bash id="gd1knx"
+docker-compose up --build
+```
+
+Before deployment, ensure the backend environment is configured for PostgreSQL by updating the required database environment variables.
+
+---
+
+## Environment Configuration
+
+### Backend Environment Variables
+
+Configure the following variables inside `backend/.env`.
+
+| Variable            | Purpose                                |
+| ------------------- | -------------------------------------- |
+| `DB_TYPE`           | Database driver (SQLite or PostgreSQL) |
+| `DB_HOST`           | PostgreSQL host                        |
+| `DB_PORT`           | PostgreSQL port                        |
+| `DB_USER`           | Database username                      |
+| `DB_PASSWORD`       | Database password                      |
+| `DB_NAME`           | Database name                          |
+| `DB_PATH`           | SQLite database location               |
+| `JWT_SECRET`        | Secret key used for signing JWT tokens |
+| `JWT_EXPIRY`        | JWT token expiration period            |
+| `PORT`              | Backend application port               |
+| `CORS_ORIGINS`      | Allowed frontend origins               |
+| `COOKIE_SAME_SITE`  | Cookie security policy                 |
+| `COOKIE_DOMAIN`     | Cookie domain                          |
+| `SHARE_EXPIRY_DAYS` | Public itinerary expiration period     |
+| `MAIL_HOST`         | SMTP server host                       |
+| `MAIL_PORT`         | SMTP server port                       |
+| `MAIL_USER`         | SMTP username                          |
+| `MAIL_PASS`         | SMTP password                          |
+
+---
+
+### Frontend Environment Variables
+
+Configure the frontend API endpoint.
+
+| Variable       | Purpose         |
+| -------------- | --------------- |
+| `VITE_API_URL` | Backend API URL |
 
 ---
 
 ## Database Migrations
 
-- `synchronize` is disabled in production; all schema changes go through migration files.
-- 7 migrations exist covering the full schema history.
-- Commands:
-  ```bash
-  npm run migration:generate src/migrations/MigrationName
-  npm run migration:run
-  npm run migration:revert
-  ```
-- *Note: the `AddEmailVerifiedToUser` migration includes a backfill that sets `emailVerified=true` on all pre-existing accounts so they are not locked out after upgrading.*
+DesiVagabond uses TypeORM migrations for schema management. Automatic synchronization is disabled in production to ensure database consistency and controlled schema evolution.
+
+Generate a new migration:
+
+```bash id="3l6ymx"
+npm run migration:generate src/migrations/MigrationName
+```
+
+Apply pending migrations:
+
+```bash id="mrjlwm"
+npm run migration:run
+```
+
+Rollback the latest migration:
+
+```bash id="6h3cw2"
+npm run migration:revert
+```
+
+Migration-based schema management provides a reliable deployment workflow while preserving database integrity across application updates.
 
 ---
 
-## Running Tests
+## Testing
 
-```bash
-cd backend && npm run test        # unit tests (auth, trips, admin, users, mail)
-cd backend && npm run test:e2e    # end-to-end tests
+DesiVagabond includes automated testing for authentication, trip management, administrative modules, and core backend services.
+
+Run unit tests:
+
+```bash id="skl6w7"
+cd backend
+
+npm run test
 ```
 
----
+Run end-to-end tests:
 
-## Project Structure
+```bash id="d9ksan"
+npm run test:e2e
+```
 
-```
-.
-├── backend
-│   └── src
-│       ├── activities
-│       ├── admin
-│       ├── auth
-│       ├── cities
-│       ├── mail
-│       ├── shared
-│       ├── trips
-│       └── users
-├── frontend
-│   └── src
-│       ├── components
-│       ├── hooks
-│       └── pages
-├── docker-compose.yml
-└── package.json
-```
+Executing automated tests before deployment helps ensure application stability and verifies that newly introduced features do not affect existing functionality.
 
 ---
 
 ## API Overview
 
-| Group | Base Path | Auth Required | Notes |
-| --- | --- | --- | --- |
-| Auth | `/api/auth` | No (except `/me`) | Login, register, logout, forgot/reset password |
-| Users | `/api/users` | No (`verify-email`) / Yes (`profile`) | Profile, email verify, account delete |
-| Trips | `/api/trips` | Yes | CRUD, share toggle, paginated list |
-| Stops | `/api/trips/:id/stops` | Yes | Add, delete, reorder, activities |
-| Shared | `/api/shared/:token` | No | Public read-only itinerary view |
-| Cities | `/api/cities` | No | Directory with filters, types, regions |
-| Activities | `/api/activities` | No | Directory with city/category/cost filters |
-| Admin | `/api/admin` | Yes (admin role) | Stats, audit logs, cache clear |
+The backend exposes a RESTful API organized into modular service groups.
+
+| Module             | Description                                                          |
+| ------------------ | -------------------------------------------------------------------- |
+| Authentication     | User registration, login, logout, email verification, password reset |
+| Users              | User profile management and account operations                       |
+| Trips              | Trip creation, updates, deletion, itinerary management               |
+| Stops              | Destination management and itinerary reordering                      |
+| Shared Itineraries | Public read-only itinerary access through secure share links         |
+| Cities             | Destination directory with search and filtering                      |
+| Activities         | Activity catalog with category and location filters                  |
+| Administration     | Platform statistics, audit logs, and administrative services         |
 
 ---
 
 ## Security
 
-- JWT stored in `httpOnly` cookie (7d TTL, secure, sameSite strict)
-- Hard-gate email verification: login blocked until email is verified
-- CSRF protection: csurf middleware issues `XSRF-TOKEN` cookie; frontend sends it as `X-CSRF-Token` header
-- Rate limiting: 10 req/min globally, 5 req/min on auth endpoints via `@nestjs/throttler`
-- bcrypt with 12 salt rounds for password hashing
-- All destructive actions (trip/stop/item deletes) written to `audit_logs` table
+Security has been integrated throughout the application architecture using industry-standard practices.
+
+Key security measures include:
+
+* JWT authentication using secure HTTP-only cookies.
+* Mandatory email verification before account access.
+* CSRF protection for authenticated requests.
+* Password hashing using bcrypt.
+* Request rate limiting to prevent abuse.
+* Role-based authorization for administrative functionality.
+* Secure public itinerary sharing through expiring tokens.
+* Audit logging for sensitive operations and administrative actions.
+
+---
+
+## Project Structure
+
+```text id="xkqn96"
+desivagabond/
+│
+├── backend/
+│   └── src/
+│       ├── activities/
+│       ├── admin/
+│       ├── auth/
+│       ├── cities/
+│       ├── mail/
+│       ├── shared/
+│       ├── trips/
+│       └── users/
+│
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── hooks/
+│       └── pages/
+│
+├── docker-compose.yml
+└── package.json
+```
+
+The project follows a modular architecture that separates frontend presentation, backend business logic, authentication, administrative services, and travel management into independent modules, making the codebase easier to maintain, extend, and scale.
 
 ---
 
 ## Contributors
 
-| Name | Role |
-|---|---|
-| [Srikara Varadan](https://github.com/) | Frontend Developer |
-| [Nikhileswar](https://github.com/) | Backend Developer |
+| Name               | Role                 |
+| ------------------ | -------------------- |
+| Srikara Varadan    | Frontend Development |
+| Kavuru Nikhileswar | Backend Development  |
